@@ -443,7 +443,6 @@ asynStatus Automation1MotorController::executeProfile()
 
 done:
 
-    setIntegerParam(profileExecute_, 0);
     // If we didn't fail to start the program, we let the polling thread
     // update profileExecuteStatus_ and profileExecuteState_ when we are
     // done.
@@ -616,6 +615,7 @@ asynStatus Automation1MotorController::poll()
         }
 
         if (!dataCollectionStatus.IsCollecting) {
+            setIntegerParam(profileExecute_, 0);
             setIntegerParam(profileExecuteState_, PROFILE_EXECUTE_DONE);
 
 
