@@ -1,0 +1,6 @@
+# Automation1 CS driver support.
+
+# Model 3 driver
+registrar(Automation1CSRegister)
+
+
