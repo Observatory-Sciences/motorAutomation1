@@ -8,19 +8,17 @@ dbLoadDatabase("../../dbd/automation1.dbd")
 automation1_registerRecordDeviceDriver(pdbbase)
 
 #Automation1CreateController("Automation1", "000.000.000.000", 4, 200, 1000)
-Automation1CreateController("Automation1", "10.2.2.168", 4, 200, 1000)
+Automation1CreateController("Automation1", "10.2.2.168", 32, 200, 1000)
+Automation1CreateController("Automation2", "10.2.2.166", 32, 200, 1000)
 
-#motorNames must be a comma separated string.
-#Automation1CreateCSAxis(    portName,      transformScriptName,   CS_Type,    CS_Name, globalVelRBV, globalPosRBV, globalPosDMD, CSAxisAddr, numCSAxes, motorNames )
-Automation1CreateCSAxis("Automation1", "CS_Transform_Slit.ascript",    "0", "slitTest",            3,	   4,            5,          2,	  2,       "0,1")
-Automation1CreateCSAxis("Automation1", "CS_Transform_Slit.ascript",    "0", "slitTest",            6,	   7,            8,          3,	  2,       "0,1")
 
 
 # Profile Move
 Automation1CreateProfile("Automation1", 2000)
+Automation1CreateProfile("Automation2", 2000)
 
 ### Motors
-dbLoadTemplate "motor.substitutions.automation1"
+dbLoadTemplate "motor.substitutions_32.automation1"
 
 iocInit
 
@@ -33,3 +31,14 @@ dbpf("Auto1:m3.RTRY", "0")
 dbpf("Auto1:m3.TWV", "0.1")
 dbpf("Auto1:m4.RTRY", "0")
 dbpf("Auto1:m4.TWV", "0.1")
+
+
+
+dbpf("Auto2:m1.RTRY", "0")
+dbpf("Auto2:m1.TWV", "0.1")
+dbpf("Auto2:m2.RTRY", "0")
+dbpf("Auto2:m2.TWV", "0.1")
+dbpf("Auto2:m3.RTRY", "0")
+dbpf("Auto2:m3.TWV", "0.1")
+dbpf("Auto2:m4.RTRY", "0")
+dbpf("Auto2:m4.TWV", "0.1")

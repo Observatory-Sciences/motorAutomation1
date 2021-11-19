@@ -1,0 +1,170 @@
+
+file "$(MOTOR)/db/basic_asyn_motor.db"
+{
+pattern
+{P,      N,       M,        DTYP,         PORT,  ADDR,     DESC,  EGU,   DIR,   VELO,  VBAS, ACCL, BDST, BVEL, BACC, MRES, PREC,   DHLM, DLLM,  INIT}
+{Auto1:, 1, "m$(N)", "asynMotor",  Automation1,     0, "X Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 2, "m$(N)", "asynMotor",  Automation1,     1, "Y Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 3, "m$(N)", "asynMotor",  Automation1,     2, "Z Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 4, "m$(N)", "asynMotor",  Automation1,     3, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 5, "m$(N)", "asynMotor",  Automation1,     4, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 6, "m$(N)", "asynMotor",  Automation1,     5, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 7, "m$(N)", "asynMotor",  Automation1,     6, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 8, "m$(N)", "asynMotor",  Automation1,     7, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:, 9, "m$(N)", "asynMotor",  Automation1,     8, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,10, "m$(N)", "asynMotor",  Automation1,     9, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,11, "m$(N)", "asynMotor",  Automation1,    10, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,12, "m$(N)", "asynMotor",  Automation1,    11, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,13, "m$(N)", "asynMotor",  Automation1,    12, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,14, "m$(N)", "asynMotor",  Automation1,    13, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,15, "m$(N)", "asynMotor",  Automation1,    14, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,16, "m$(N)", "asynMotor",  Automation1,    15, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,17, "m$(N)", "asynMotor",  Automation1,    16, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,18, "m$(N)", "asynMotor",  Automation1,    17, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,19, "m$(N)", "asynMotor",  Automation1,    18, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,20, "m$(N)", "asynMotor",  Automation1,    19, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,21, "m$(N)", "asynMotor",  Automation1,    20, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,22, "m$(N)", "asynMotor",  Automation1,    21, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,23, "m$(N)", "asynMotor",  Automation1,    22, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,24, "m$(N)", "asynMotor",  Automation1,    23, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,25, "m$(N)", "asynMotor",  Automation1,    24, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,26, "m$(N)", "asynMotor",  Automation1,    25, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,27, "m$(N)", "asynMotor",  Automation1,    26, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,28, "m$(N)", "asynMotor",  Automation1,    27, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,29, "m$(N)", "asynMotor",  Automation1,    28, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,30, "m$(N)", "asynMotor",  Automation1,    29, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,31, "m$(N)", "asynMotor",  Automation1,    30, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto1:,32, "m$(N)", "asynMotor",  Automation1,    31, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 1, "m$(N)", "asynMotor",  Automation2,     0, "X Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 2, "m$(N)", "asynMotor",  Automation2,     1, "Y Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 3, "m$(N)", "asynMotor",  Automation2,     2, "Z Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 4, "m$(N)", "asynMotor",  Automation2,     3, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 5, "m$(N)", "asynMotor",  Automation2,     4, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 6, "m$(N)", "asynMotor",  Automation2,     5, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 7, "m$(N)", "asynMotor",  Automation2,     6, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 8, "m$(N)", "asynMotor",  Automation2,     7, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:, 9, "m$(N)", "asynMotor",  Automation2,     8, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,10, "m$(N)", "asynMotor",  Automation2,     9, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,11, "m$(N)", "asynMotor",  Automation2,    10, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,12, "m$(N)", "asynMotor",  Automation2,    11, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,13, "m$(N)", "asynMotor",  Automation2,    12, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,14, "m$(N)", "asynMotor",  Automation2,    13, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,15, "m$(N)", "asynMotor",  Automation2,    14, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,16, "m$(N)", "asynMotor",  Automation2,    15, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,17, "m$(N)", "asynMotor",  Automation2,    16, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,18, "m$(N)", "asynMotor",  Automation2,    17, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,19, "m$(N)", "asynMotor",  Automation2,    18, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,20, "m$(N)", "asynMotor",  Automation2,    19, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,21, "m$(N)", "asynMotor",  Automation2,    20, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,22, "m$(N)", "asynMotor",  Automation2,    21, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,23, "m$(N)", "asynMotor",  Automation2,    22, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,24, "m$(N)", "asynMotor",  Automation2,    23, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,25, "m$(N)", "asynMotor",  Automation2,    24, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,26, "m$(N)", "asynMotor",  Automation2,    25, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,27, "m$(N)", "asynMotor",  Automation2,    26, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,28, "m$(N)", "asynMotor",  Automation2,    27, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,29, "m$(N)", "asynMotor",  Automation2,    28, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,30, "m$(N)", "asynMotor",  Automation2,    29, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,31, "m$(N)", "asynMotor",  Automation2,    30, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+{Auto2:,32, "m$(N)", "asynMotor",  Automation2,    31, "U Axis",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
+}
+
+file "$(MOTOR)/db/profileMoveController.template"
+{
+pattern
+{     P,     R,        PORT, NAXES, NPOINTS, NPULSES, TIMEOUT}
+{Auto1:,  pm1:, Automation1,     4,    2000,    2000,       1}
+{Auto2:,  pm2:, Automation1,     4,    2000,    2000,       1}
+}
+
+file "$(MOTOR)/db/profileMoveAxis.template"
+{
+pattern
+{     P,      R, M,         PORT, ADDR, NPOINTS, NREADBACK,     MOTOR, PREC, TIMEOUT}
+{Auto1:,   pm1:, 1,  Automation1,    0,    2000,      2000,  Auto1:m1,    3,       1}
+{Auto1:,   pm1:, 2,  Automation1,    1,    2000,      2000,  Auto1:m2,    3,       1}
+{Auto1:,   pm1:, 3,  Automation1,    2,    2000,      2000,  Auto1:m3,    3,       1}
+{Auto1:,   pm1:, 4,  Automation1,    3,    2000,      2000,  Auto1:m4,    3,       1}
+{Auto2:,   pm2:, 1,  Automation1,    0,    2000,      2000,  Auto2:m1,    3,       1}
+{Auto2:,   pm2:, 2,  Automation1,    1,    2000,      2000,  Auto2:m2,    3,       1}
+{Auto2:,   pm2:, 3,  Automation1,    2,    2000,      2000,  Auto2:m3,    3,       1}
+{Auto2:,   pm2:, 4,  Automation1,    3,    2000,      2000,  Auto2:m4,    3,       1}
+}
+
+file "$(MOTOR)/modules/motorAutomation1/automation1App/Db/Automation1MotorController.template"
+{
+pattern
+{     P,        PORT,     TIMEOUT}
+{Auto1:, Automation1,           1}
+{Auto2:, Automation2,           1}
+}
+
+file "$(MOTOR)/modules/motorAutomation1/automation1App/Db/Automation1MotorAxis.template"
+{
+pattern
+{     P,	M,        PORT,	ADDR,    TIMEOUT}
+{Auto1:, 	m1:, Automation1,	0,           	1}
+{Auto1:, 	m2:, Automation1,	1,           	1}
+{Auto1:, 	m3:, Automation1,	2,           	1}
+{Auto1:, 	m4:, Automation1,	3,           	1}
+{Auto1:, 	m5:, Automation1,	4,           	1}
+{Auto1:, 	m6:, Automation1,	5,           	1}
+{Auto1:, 	m7:, Automation1,	6,           	1}
+{Auto1:, 	m8:, Automation1,	7,           	1}
+{Auto1:, 	m9:, Automation1,	8,           	1}
+{Auto1:, 	m10:, Automation1,	9,           	1}
+{Auto1:, 	m11:, Automation1,	10,           	1}
+{Auto1:, 	m12:, Automation1,	11,           	1}
+{Auto1:, 	m13:, Automation1,	12,           	1}
+{Auto1:, 	m14:, Automation1,	13,           	1}
+{Auto1:, 	m15:, Automation1,	14,           	1}
+{Auto1:, 	m16:, Automation1,	15,           	1}
+{Auto1:, 	m17:, Automation1,	16,           	1}
+{Auto1:, 	m18:, Automation1,	17,           	1}
+{Auto1:, 	m19:, Automation1,	18,           	1}
+{Auto1:, 	m20:, Automation1,	19,           	1}
+{Auto1:, 	m21:, Automation1,	20,           	1}
+{Auto1:, 	m22:, Automation1,	21,           	1}
+{Auto1:, 	m23:, Automation1,	22,           	1}
+{Auto1:, 	m24:, Automation1,	23,           	1}
+{Auto1:, 	m25:, Automation1,	24,           	1}
+{Auto1:, 	m26:, Automation1,	25,           	1}
+{Auto1:, 	m27:, Automation1,	26,           	1}
+{Auto1:, 	m28:, Automation1,	27,           	1}
+{Auto1:, 	m29:, Automation1,	28,           	1}
+{Auto1:, 	m30:, Automation1,	29,           	1}
+{Auto1:, 	m31:, Automation1,	30,           	1}
+{Auto1:, 	m32:, Automation1,	31,           	1}
+{Auto2:, 	m1:, Automation2,	0,           	1}
+{Auto2:, 	m2:, Automation2,	1,           	1}
+{Auto2:, 	m3:, Automation2,	2,           	1}
+{Auto2:, 	m4:, Automation2,	3,           	1}
+{Auto2:, 	m5:, Automation2,	4,           	1}
+{Auto2:, 	m6:, Automation2,	5,           	1}
+{Auto2:, 	m7:, Automation2,	6,           	1}
+{Auto2:, 	m8:, Automation2,	7,           	1}
+{Auto2:, 	m9:, Automation2,	8,           	1}
+{Auto2:, 	m10:, Automation2,	9,           	1}
+{Auto2:, 	m11:, Automation2,	10,           	1}
+{Auto2:, 	m12:, Automation2,	11,           	1}
+{Auto2:, 	m13:, Automation2,	12,           	1}
+{Auto2:, 	m14:, Automation2,	13,           	1}
+{Auto2:, 	m15:, Automation2,	14,           	1}
+{Auto2:, 	m16:, Automation2,	15,           	1}
+{Auto2:, 	m17:, Automation2,	16,           	1}
+{Auto2:, 	m18:, Automation2,	17,           	1}
+{Auto2:, 	m19:, Automation2,	18,           	1}
+{Auto2:, 	m20:, Automation2,	19,           	1}
+{Auto2:, 	m21:, Automation2,	20,           	1}
+{Auto2:, 	m22:, Automation2,	21,           	1}
+{Auto2:, 	m23:, Automation2,	22,           	1}
+{Auto2:, 	m24:, Automation2,	23,           	1}
+{Auto2:, 	m25:, Automation2,	24,           	1}
+{Auto2:, 	m26:, Automation2,	25,           	1}
+{Auto2:, 	m27:, Automation2,	26,           	1}
+{Auto2:, 	m28:, Automation2,	27,           	1}
+{Auto2:, 	m29:, Automation2,	28,           	1}
+{Auto2:, 	m30:, Automation2,	29,           	1}
+{Auto2:, 	m31:, Automation2,	30,           	1}
+{Auto2:, 	m32:, Automation2,	31,           	1}
+

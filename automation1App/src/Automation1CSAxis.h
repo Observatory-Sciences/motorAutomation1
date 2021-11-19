@@ -17,11 +17,13 @@
 #define RESERVED_IGLOBAL_DATA		    3
 #define RESERVED_SGLOBAL_CSNAME	        0
 #define RESERVED_SGLOBAL_AXISLIST	    1
+#define RESERVED_SGLOBAL_CSTYPE		    2
 
-// Could probably be done with an enum..
+// Could probably be done with enums..
 #define DATA_WAITING_NO		    0
 #define DATA_WAITING_YES		1
 #define DATA_WAITING_DONE		2
+
 
 class Automation1MotorController;
 class Automation1MotorAxis;
@@ -30,13 +32,24 @@ class epicsShareClass Automation1CSAxis : public Automation1MotorAxis
 {
 public:
     // Member functions we override from the base class.
-    Automation1CSAxis(Automation1MotorController* pC, const char* transformScriptName, const char* moveScriptName, 
-    							const char* CS_Name, int globalReadIndexVel, int globalReadIndexPos, int globalWriteIndexPos, int v_axisAddr, int total_vAxes, const char* r_axisList );
+    Automation1CSAxis(Automation1MotorController* pC, const char* transformScriptName, const char* CS_Type, 
+    							const char* const CS_Name, int globalReadIndexVel, int globalReadIndexPos, int globalWriteIndexPos, int v_axisAddr, int total_vAxes, const char* r_axisList );
     ~Automation1CSAxis();
 
     asynStatus move(double position, int relative, double min_velocity, double max_velocity, double acceleration);
     asynStatus moveVelocity(double min_velocity, double max_velocity, double acceleration);
     asynStatus poll(bool* moving);
+    asynStatus home(double min_velocity, double max_velocity, double acceleration, int forwards);
+    asynStatus stop(double acceleration);
+    asynStatus setClosedLoop(bool closedLoop);
+    
+    //------------------------------------------------------------------------------------------------------
+    //asynStatus setPosition(double position);
+
+    // Needed for profile motion.
+    //asynStatus defineProfile(double* positions, size_t numPoints);
+    //asynStatus readbackProfile();
+    //------------------------------------------------------------------------------------------------------
 
 
 
@@ -50,22 +63,19 @@ private:
     inline bool isInteger(const std::string & s);                                                       // Determines if a string contains only integers or not.
     
     Automation1MotorController* pC_;                                                                    // Pointer to asynMotorController to which the axis belongs.
-    
-
-    //TODO: Tidy this up and describe all vars.
-    
-    std::vector<int> axisIndexList_;                                                                    // Contains a list of the indices of real axes associated with this CS.
-
-    int globalReadIndexPos_, globalWriteIndexPos_, globalReadIndexVel_;                                 // $iglobal index on controller to use for POS_RBV, POS_DMD and VEL_RBV.
-    
-    int numStatusItems_;                                                                                // Total number of status items being tracked by this virtual axis.
-    
-    const char* transformScriptName_, *moveScriptName_;                                                 // Aeroscript name to use for transformations and moves.
-    const char* CS_Name_;                                                                               // Name of the CS that this virtual axis belongs to.
-    
+    int globalReadIndexVel_, globalReadIndexPos_, globalWriteIndexPos_;                                 // $iglobal index on controller to use for POS_RBV, POS_DMD and VEL_RBV.
+    const char* transformScriptName_, *CS_Type_;                                                        // Aeroscript name to use for transformations and moves.
+    const char* const CS_Name_;                                                                               // Name of the CS that this virtual axis belongs to.
     int v_axisAddr_, total_vAxes_;                                                                      // The asyn address this virtual axis will occupy in the controller and 
                                                                                                         // total number of virtual axes in this CS.
     const char* r_axisList_;                                                                            // A list of the real motors that the co-ordinate system this axis belongs to will use. 
+    
+    std::vector<int> axisIndexList_;                                                                    // Contains a list of the indices of real axes associated with this CS.
+
+                                    
+    int numStatusItems_;                                                                                // Total number of status items being tracked by this virtual axis.
+    
+    bool ctorComplete=false;
     
     Automation1StatusConfig statusConfig_;                                                              // The config is used by certain functions in the Automation1 C API to
                                                                                                         // get status items from the controller.  This is needed for polling.
@@ -73,8 +83,8 @@ private:
     
     static std::vector< Automation1CSAxis* > csAxisList_;                                               // Contains a list of all virtual axes.
 
-    bool registeringAxis = false;			                                                            // Set to true whilst registering is in progress then reset to false.
-    bool axisRegistered = false;			                                                            // Set to true when axis has been registered.
+    bool registeringAxis = false;                                                                       // Set to true whilst registering is in progress then reset to false.
+    bool axisRegistered = false;                                                                        // Set to true when axis has been registered.
 
     // Automation1 error codes and messages must be acquired through
     // calls to the C API.  To avoid duplicate code, we wrap calls 
