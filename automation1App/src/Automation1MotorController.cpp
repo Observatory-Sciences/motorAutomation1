@@ -86,7 +86,7 @@ Automation1MotorController::Automation1MotorController(const char* portName, con
         // Note: We do not enable axes (i.e. setClosedLoop) at startup because 
         //       this involves actually powering the axis in question.  The 
         //       user should explicitly enable axes.
-       // new Automation1MotorAxis(this, axis);
+        new Automation1MotorAxis(this, axis);
     }
 
     startPoller(movingPollPeriod, idlePollPeriod, 2);

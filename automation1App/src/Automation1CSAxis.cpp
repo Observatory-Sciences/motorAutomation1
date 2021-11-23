@@ -39,7 +39,7 @@
   * \param[in] r_axisList		    Indices or names of the real motors to which this co-ordinate system corresponds. Should be a comma separated string.
 
   */
-Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char* transformScriptName, const char* CS_Type, const char* const CS_Name,
+Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char* transformScriptName, const char* CS_Type, const char* CS_Name,
 					 int globalReadIndexVel, int globalReadIndexPos, int globalWriteIndexPos, int v_axisAddr, int total_vAxes, const char* r_axisList )
     : Automation1MotorAxis(pC, v_axisAddr),
     pC_(pC),
@@ -60,17 +60,15 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
 
     std::vector<std::string> parsedAxisList = parseAxisList(r_axisList_, std::string(","));
     axisIndexList_.resize(parsedAxisList.size());                                                   // Resize this to have the same number of elements as axes.
-
-
+    
+    
     // In case we were given axis names rather than an index, try to match them up so we have an index list.    
     int availAxisCount = Automation1_Controller_AvailableAxisCount(pC_->controller_);
     int chrArrSz = 64;
     char axName[chrArrSz];
     
     for(int i=0; i<availAxisCount; i++)
-    { 
-        // TODO BUG: This API call is causing a segfault.
-              
+    {               
         if(!Automation1_Parameter_GetAxisStringValue(pC_->controller_, i, Automation1AxisParameterId_AxisName, axName, chrArrSz))
         {
             logError("Unable to get axis name!");
@@ -139,8 +137,7 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
         break;
         
         case Automation1TaskState_Idle:
-            //this command seems to be messing stuff up
-            ret = Automation1_Task_ProgramRun(pC_->controller_, TRANSFORM_TASK_INDEX, transformScriptName_); 
+            ret = Automation1_Task_ProgramRun(pC_->controller_, TRANSFORM_TASK_INDEX, transformScriptName_.c_str()); 
             if(!ret)
             {
                 logError("ERROR: Could not start transformation script.");
@@ -211,9 +208,9 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
             this->registeringAxis = true;                                       // Probably no need to set it twice but let's make sure.
             
             // Set the various bits of info then set $dataWaiting flag for controller.    
-            this->setScriptStringParam(this->CS_Name_, RESERVED_SGLOBAL_CSNAME);
-            this->setScriptStringParam(this->CS_Type_, RESERVED_SGLOBAL_CSTYPE);
-            this->setScriptStringParam(this->r_axisList_, RESERVED_SGLOBAL_AXISLIST);
+            this->setScriptStringParam(this->CS_Name_.c_str(), RESERVED_SGLOBAL_CSNAME);
+            this->setScriptStringParam(this->CS_Type_.c_str(), RESERVED_SGLOBAL_CSTYPE);
+            this->setScriptStringParam(this->r_axisList_.c_str(), RESERVED_SGLOBAL_AXISLIST);
             this->setScriptIntegerParam(this->globalReadIndexVel_, RESERVED_IGLOBAL_RBV_VEL);
             this->setScriptIntegerParam(this->globalReadIndexPos_, RESERVED_IGLOBAL_RBV_POS);
             this->setScriptIntegerParam(this->globalWriteIndexPos_, RESERVED_IGLOBAL_DMD_POS);
@@ -221,6 +218,7 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
 
             // Wait for DataWaiting to be set back to No before continuing.
             int dataWaitingState = -1;
+            //TODO: Make this not cout
             std::cout << "Axis " << v_axisAddr_ << ": Waiting for controller to finish processing axis data..." << std::endl;
             while(dataWaitingState != DATA_WAITING_NO)
             {
@@ -251,11 +249,13 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
     {
         // Wait for $dataWaiting = DataWaiting.No before setting it to DataWaiting.Done
         int dataWaitingState = -1;
+        //TODO: Make this not cout
         std::cout << "Axis " << v_axisAddr_ << ": Waiting for controller to finish processing final axis data..." << std::endl;
         while(dataWaitingState != DATA_WAITING_NO)
         {
             dataWaitingState = getDataWaitingState();
         }
+        //TODO: Make this not cout
         std::cout << "Setting allDone." << std::endl;
         this->setDataWaitingState(DATA_WAITING_DONE);
     }
@@ -284,7 +284,6 @@ void Automation1CSAxis::setScriptStringParam(const char* param, int global_index
 {
     bool ret;
     std::string setParamCmd = "$sglobal[" + std::to_string(global_index) + "]=\"" + param + "\"";
-    std::cout << "String Cmd: " << setParamCmd << std::endl;
     ret = Automation1_Command_Execute(pC_->controller_, 1, setParamCmd.c_str());
     if(!ret)
     {
@@ -297,7 +296,6 @@ void Automation1CSAxis::setScriptIntegerParam(int param, int global_index)
 {
     bool ret;
     std::string setParamCmd = "$iglobal[" + std::to_string(global_index) + "]=" + std::to_string(param);
-    std::cout << "Integer Cmd: " << setParamCmd << std::endl;
     ret = Automation1_Command_Execute(pC_->controller_, 1, setParamCmd.c_str());
     if(!ret)
     {
@@ -342,6 +340,7 @@ std::vector<std::string> Automation1CSAxis::parseAxisList( std::string axisList,
     std::string axisID;
     std::vector<std::string> parsedList;
     
+    // Extract tokens based on delimiter.
     while( (pos_end = axisList.find(delimiter, pos_start)) != std::string::npos)
     {
         axisID = axisList.substr(pos_start, pos_end - pos_start);
@@ -367,7 +366,7 @@ Automation1CSAxis::~Automation1CSAxis()
 }
 
 extern "C" int Automation1CreateCSAxis(const char* portName, const char* transformScriptName, const char* CS_Type, 
-    							const char* const CS_Name, int globalReadIndexVel, int globalReadIndexPos, int globalWriteIndexPos, int v_axisAddr, int total_vAxes, const char* r_axisList)
+    							const char* CS_Name, int globalReadIndexVel, int globalReadIndexPos, int globalWriteIndexPos, int v_axisAddr, int total_vAxes, const char* r_axisList)
 {
     Automation1MotorController *pC;
     static const char *functionName = "Automation1CreateCSAxis";
@@ -406,25 +405,17 @@ asynStatus Automation1CSAxis::move(double position, int relative, double minVelo
     // Call move script here.
     std::string strWritePos = "$rglobal["+std::to_string(globalWriteIndexPos_)+"]="+ std::to_string(adjustedPosition);
 	const char* cchrWritePos = strWritePos.c_str();
-	//const char* aeroScriptName = "Slit_CS_Move.ascript\0";
 
-	
 	if (!Automation1_Command_Execute(pC_->controller_, 1, cchrWritePos))
 	{
 		logError("ERROR: Could not set commanded position value to a controller $rglobal variable.");
 	}
-	
-	//moveSuccessful = Automation1_Task_ProgramRun(pC_->controller_, 1, aeroScriptName);
 
-	std::string strMoveCmd = "CS_MoveAbsolute(";
-	strMoveCmd += CS_Name_;
-	strMoveCmd += ")";
-	std::cout << "strMoveCmd: " << strMoveCmd << std::endl;
-	std::cout << "csname: " << CS_Name_ << std::endl;
+    // AeroScript call: CS_MoveAbsolute($CS_Name as string)
+	std::string strMoveCmd = "CS_MoveAbsolute(\"" + CS_Name_ + "\")";
 	moveSuccessful = Automation1_Command_Execute(pC_->controller_, 1, strMoveCmd.c_str());
 
     
-
     if (moveSuccessful)
     {
         return asynSuccess;
@@ -443,22 +434,11 @@ asynStatus Automation1CSAxis::move(double position, int relative, double minVelo
   */
 asynStatus Automation1CSAxis::moveVelocity(double minVelocity, double maxVelocity, double acceleration)
 {
+    bool moveSuccessful;
     double adjustedAcceleration = acceleration / countsPerUnitParam_;
     double adjustedVelocity = maxVelocity / countsPerUnitParam_;
     
     setIntegerParam(pC_->motorStatusProblem_,0);            // Unset "Problem" status bit. A logError call will set it.
-    
-    // Determine which virtual axis this is
-    int index;                                              // index will be the index of CSData to use to determine which virtual axis sent this command.
-    for(uint i=0; i<csAxisList_.size(); i++)
-    {
-        if(csAxisList_[i] == this)
-        {
-            index=i;
-            break;
-        }
-    }
-
 
     for(uint i=0; i<axisIndexList_.size(); i++)
     {
@@ -475,18 +455,22 @@ asynStatus Automation1CSAxis::moveVelocity(double minVelocity, double maxVelocit
         }
     }
     
-    std::string strWritePos = "CS_MoveVelocity";
-	const char* cchrWritePos = strWritePos.c_str();
+    // AeroScript: library function CS_MoveVelocity($CS_Name as string, $velocity as real, $RBV_Index as integer)
+    // The aeroscript library that receives this call uses the RBV global index (globalReadIndexPos_) to determine which virtual axis called it.
+    // This is in case different coordinated movement is required on a per-axis basis.
+    std::string strJogCmd = "CS_MoveVelocity(\"" + CS_Name_ + "\", " + std::to_string(adjustedVelocity) + "," + std::to_string(globalReadIndexPos_) +  ")";
+	moveSuccessful = Automation1_Command_Execute(pC_->controller_, 1, strJogCmd.c_str());
 
-    for(uint i=0; i<axisIndexList_.size(); i++)
+    if (moveSuccessful)
     {
-        if (!Automation1_Command_MoveFreerun(pC_->controller_, 1, &axisIndexList_[i], 1, &adjustedVelocity, 1))
-        {
-            logError("moveVelocity (jog) failed.");
-            return asynError;
-        }
+        return asynSuccess;
     }
-    return asynSuccess;
+    else
+    {
+        logError("Failed to move axis.");
+        return asynError;
+    }
+
 }
 
 
@@ -592,6 +576,8 @@ asynStatus Automation1CSAxis::setClosedLoop(bool closedLoop)
 asynStatus Automation1CSAxis::poll(bool* moving)
 {
     bool pollSuccessfull = true;
+    
+    // if(ctorComplete) blocks so that the polling thread doesn't start trying to use uninitialised variables whilst the main thread is still in the constructor.
 if(ctorComplete)
 {
   
@@ -611,16 +597,6 @@ if(ctorComplete)
     int faults;
     
     double getMRES;
-    
-    
-    std::cout << "polling " << this->v_axisAddr_ << " - name: " << this->CS_Name_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - (void *)name: " << (void *)this->CS_Name_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - *name: " << *this->CS_Name_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - CS_Type_: " << this->CS_Type_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - transformScriptName_: " << this->transformScriptName_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - &transformScriptName_: " << &transformScriptName_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - r_axisList_: " << this->r_axisList_ << std::endl;
-    std::cout << "polling " << this->v_axisAddr_ << " - total_vAxes_: " << this->total_vAxes_ << std::endl;
 
     std::string commandGetPos = "$rreturn[0] = $rglobal[" + std::to_string(globalReadIndexPos_) + "]";
     std::string commandGetVel = "$rreturn[0] = $rglobal[" + std::to_string(globalReadIndexVel_) + "]";
@@ -817,8 +793,7 @@ skip:
     }
 
     return pollSuccessfull ? asynSuccess : asynError;
-}
-
+} // poll
 
 
 /** Logs an driver error and error details from the C API.  Made to reduce duplicate code.
