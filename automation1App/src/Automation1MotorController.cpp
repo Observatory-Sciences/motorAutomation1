@@ -23,6 +23,10 @@
 #include "Automation1MotorAxis.h"
 #include "Include/Automation1.h"
 
+#include "Automation1CSAxis.h"
+
+//TODO: remove #include <iostream>
+#include <iostream>
 
 /** Creates a new Automation1MotorController object.
   *
@@ -234,18 +238,46 @@ asynStatus Automation1MotorController::buildProfile()
     profileAxesResolutions_.clear();
     profileAxes_.reserve(numAxes_);
     profileAxesResolutions_.reserve(numAxes_);
+    
+    // Virtual Axes and resolutions to be used in a profile move.
+    std::vector<Automation1CSAxis*> profileCSAxes_;
+    profileCSAxes_.reserve(numAxes_);
+    std::vector<double> profileCSAxesResolutions_;
+    profileCSAxesResolutions_.reserve(numAxes_);
+    
     for (i = 0; i < numAxes_; i++)
     {
         getIntegerParam(i, profileUseAxis_, &useAxis);
         if (useAxis)
         {
-            profileAxes_.push_back(i);
-            getDoubleParam(i, motorRecResolution_, &resolution);
-            profileAxesResolutions_.push_back(resolution);
+            for(int k=0; k<Automation1CSAxis::csAxisList_.size();k++)
+            {
+                if(pAxes_[i] == Automation1CSAxis::csAxisList_[k])
+                {
+                    //virtual axis
+                    profileCSAxes_.push_back(Automation1CSAxis::csAxisList_[k]);            // Contains a pointer to virtual axis objects to be used in this traj scan.
+                    getDoubleParam(i, motorRecResolution_, &resolution);
+                    profileCSAxesResolutions_.push_back(resolution);
+                    break;                                                                  // Move on to the next axis in the list if we find a match.
+                }
+                //If it's the end of the last loop around then we've not found a match for the axis in the virtual list so it must be real.
+                if(k==Automation1CSAxis::csAxisList_.size()-1)
+                {
+                    //real axis
+                    profileAxes_.push_back(i);
+                    getDoubleParam(i, motorRecResolution_, &resolution);
+                    profileAxesResolutions_.push_back(resolution);
+                }
+            }
         }
     }
     profileAxes_.shrink_to_fit();
     profileAxesResolutions_.shrink_to_fit();
+    
+    profileCSAxes_.shrink_to_fit();
+    profileCSAxesResolutions_.shrink_to_fit();
+    
+    // NOTE: numUsedAxes is just the number of real axes now, not the total.
     numUsedAxes = profileAxes_.size();
 
     // For the initial release, it was decided to limit profile motion to 1 ms increments in order
@@ -294,6 +326,7 @@ asynStatus Automation1MotorController::buildProfile()
     }
 
     // We must add the required signals to the configuration handle.
+    // With numUsedAxes only being the real axes this block should still work for collecting real axis data.
     for (i = 0; i < numUsedAxes; i++)
     {
         if (!Automation1_DataCollectionConfig_AddAxisDataSignal(dataCollectionConfig_,
@@ -316,6 +349,34 @@ asynStatus Automation1MotorController::buildProfile()
             goto done;
         }
     }
+    
+    
+    //-------------------------------------------------------
+    // TODO: Add a way to retrieve data on virtual axes here.
+    //-------------------------------------------------------
+    
+    
+    
+    // Check that none of the underlying virtual axis motors are trying to be used as real motors in the same move.
+    // (i.e. making sure that any given axis is either real or virtual and not both at once.)
+    
+    if( (numUsedAxes>0) && (profileCSAxes_.size()>0) )                                      // If we have both real and virtual axes specified then do the check.
+    {
+        for(int p=0; p<numUsedAxes; p++)                                                    // Compare every real axis in use...
+        {
+            for(int q=0; q<profileCSAxes_[0]->total_vAxes_; q++)                            // ... against every virtual axis in the CS in use...
+            {
+                if( profileAxes_[p] == profileCSAxes_[0]->axisIndexList_[q] )               // ... and if any real index matches a virtual one then we have a clash so log an error.
+                {
+                    buildOK = false;
+                    logError("ERROR: A motor has been specified both as real and virtual simultaneously for a profile move!");
+                    goto done;
+                }
+            }
+        }
+    }
+
+    // NOTE: CURRENTLY NO SUPPORT FOR SCANNING MULTIPLE CS AT ONCE.
 
     // Currently the only way to guarantee timing using the C API is to upload a file to the
     // controller and execute it on a separate task.  This string is used to assemble the file
@@ -328,9 +389,18 @@ asynStatus Automation1MotorController::buildProfile()
 
     profileMoveFileContents.append("program\n");
 
-    // This constructs a string that will become an array of ints that represent the axes
+    if(profileCSAxes_.size()>0)
+    {
+        // Declare a CSData struct and load the contents of it if we have at least 1 virtual axis.
+        profileMoveFileContents.append("var $CSData as CSData\n");
+        profileMoveFileContents.append("getCSData($CSData,\""+profileCSAxes_[0]->CS_Name_+"\"+\".txt\")\n");
+    }
+    
+
+    
+    // This constructs a string that will become an array of ints that represent the >REAL< axes
     // on which we want to operate in the Aeroscript program.
-    profileMoveFileContents.append("var $axes[] as axis = [");
+    profileMoveFileContents.append("var $rAxes[] as axis = [");
     for (i = 0; i < numUsedAxes; i++)
     {
         profileMoveFileContents.append("@");
@@ -339,11 +409,38 @@ asynStatus Automation1MotorController::buildProfile()
         {
             profileMoveFileContents.append(",");
         }
-        else
+    }
+    profileMoveFileContents.append("]\n");                                              // This needed moving out of the loop in order to construct an
+                                                                                        // empty array in Aeroscript if there're no real axes.    
+    // Now the same for the virtual axes.
+    profileMoveFileContents.append("var $vAxes[] as axis = [");
+    if(profileCSAxes_.size()>0)
+    {
+        for (i = 0; i < profileCSAxes_[0]->total_vAxes_; i++)
         {
-            profileMoveFileContents.append("]\n");
+            profileMoveFileContents.append("@");
+            // All virtual axes in a CS must specify the same list of real axes to which they relate so we can just look at the list owned by the first virtual axis here.
+            // Can potentially add an additional check here in the future to *ensure* this is the case.
+            profileMoveFileContents.append(std::to_string(profileCSAxes_[0]->axisIndexList_[i]));
+            if (i != profileCSAxes_[0]->total_vAxes_ - 1)
+            {
+                profileMoveFileContents.append(",");
+            }
         }
     }
+    profileMoveFileContents.append("]\n");
+
+    // Add a variable that contains all axes
+    profileMoveFileContents.append("var $allAxes[(length($rAxes)+length($vAxes))] as axis\n");
+    
+    // Add a variable to pass into the move functions solely so we can construct the final position array to supply to the MovePt function.
+    // This is due to it not being possible to modify an array of literals in a function unless it was declared as a variable and passed as ref.
+    // The position array cannot be declared as a variable directly as there is no way to set every element at once so we can't pass as ref.
+    profileMoveFileContents.append("var $helperPosArr[(length($rAxes)+length($vAxes))] as real\n");
+    
+    // Call library function to join two axis arrays since "$allAxes[] = [$rAxes,$vAxes]" doesn't work. (Compiler allows but runtime error.)
+    profileMoveFileContents.append("joinAxisArrays($allAxes, $rAxes, $vAxes)\n");
+    
 
     // In order to run Pt moves, the task that will run the moves must have "3-position / 1-velocity"
     // interpolation mode (task value 1).  By default, the task is in "2-position / 2-velocity"
@@ -374,27 +471,77 @@ asynStatus Automation1MotorController::buildProfile()
 
     // This block assembled the main part of the program.  Each profile time corresponds to one
     // movePtCommand in Aereoscript.
-    for (i = 0; i < numPoints; i++)
-    {
-        profileMoveFileContents.append("MovePt($axes, [");
-        for (j = 0; j < numUsedAxes; j++)
-        {
-            profileMoveFileContents.append(std::to_string(pAxes_[profileAxes_[j]]->profilePositions_[i] * profileAxesResolutions_[j]));
-            if (j != numUsedAxes - 1)
+   
+    
+    // Only do this block if there are no virtual axes otherwise assume we might have both. (But still only a single CS)
+    if(profileCSAxes_.size() == 0) 
+    {    
+        for (i = 0; i < numPoints; i++)
+        {               
+            profileMoveFileContents.append("MovePt($rAxes, [");                                        
+            for (j = 0; j < numUsedAxes; j++)
             {
-                profileMoveFileContents.append(",");
+                profileMoveFileContents.append(std::to_string(pAxes_[profileAxes_[j]]->profilePositions_[i] * profileAxesResolutions_[j]));
+                if (j != numUsedAxes - 1)
+                {
+                    profileMoveFileContents.append(",");
+                }
+                else
+                {
+                    profileMoveFileContents.append("], ");
+                }
             }
-            else
-            {
-                profileMoveFileContents.append("], ");
-            }
+            // Automation1 assumes that this value is in ms, not s, so we perform the conversion.
+            profileMoveFileContents.append(std::to_string(profileTimes_[i] * 1000));
+            profileMoveFileContents.append(")\n");
         }
-        // Automation1 assumes that this value is in ms, not s, so we perform the conversion.
-        profileMoveFileContents.append(std::to_string(profileTimes_[i] * 1000));
-        profileMoveFileContents.append(")\n");
+    } 
+    else
+    {
+        for (i = 0; i < numPoints; i++)
+        {    // library function CS_MovePt($CSData as CSData, ref $allAxes[] as axis, $posArr[] as real, $vInds[] as integer, $time as real)
+            profileMoveFileContents.append("CS_MovePt($CSData, $allAxes, $helperPosArr, [");
+
+            std::vector<int> vInds;                                                        // Will hold a list of indices in $posArr where the virtual axis data can be found for transformation.
+            int curVInd = 0;                                                               // Holds the current index of $posArr that is currently being written to.
+            // Add position values for real axes.
+            for (j = 0; j < numUsedAxes; j++)
+            {
+                profileMoveFileContents.append(std::to_string(pAxes_[profileAxes_[j]]->profilePositions_[i] * profileAxesResolutions_[j]));
+                profileMoveFileContents.append(",");
+                curVInd++;
+            }
+
+            // Add position values for virtual axes.
+            for (j = 0; j < profileCSAxes_[0]->total_vAxes_; j++)
+            {
+                profileMoveFileContents.append(std::to_string(pAxes_[profileCSAxes_[j]->v_axisAddr_]->profilePositions_[i] * profileCSAxesResolutions_[j]));
+                vInds.push_back(curVInd);
+                if (j != profileCSAxes_[0]->total_vAxes_ - 1)
+                {
+                    profileMoveFileContents.append(",");
+                }
+                curVInd++;
+            }
+            profileMoveFileContents.append("], [");
+            
+            for(j = 0; j < vInds.size(); j++)
+            {
+                profileMoveFileContents.append(std::to_string(vInds[j]));
+                if (j != vInds.size() - 1)
+                {
+                    profileMoveFileContents.append(",");
+                }
+            }
+            profileMoveFileContents.append("], ");
+            
+            // Automation1 assumes that this value is in ms, not s, so we perform the conversion.
+            profileMoveFileContents.append(std::to_string(profileTimes_[i] * 1000));
+            profileMoveFileContents.append(")\n");
+        }
     }
 
-    profileMoveFileContents.append("WaitForMotionDone($axes)\n");
+    profileMoveFileContents.append("WaitForMotionDone($allAxes)\n");
     profileMoveFileContents.append("AppDataCollectionStop()\n");
     profileMoveFileContents.append("ParameterSetTaskValue(");
     profileMoveFileContents.append(std::to_string(PROFILE_MOVE_TASK_INDEX));
@@ -404,7 +551,7 @@ asynStatus Automation1MotorController::buildProfile()
     // This command writes the file to the controller.  Note that if the profile move file
     // already exists, it will be overwritten.
     if (!Automation1_Files_WriteBytes(controller_,
-        "epics_profile_move.ascript",
+        "epics_cs_profile_move.ascript",
         reinterpret_cast<const uint8_t*>(profileMoveFileContents.data()),
         profileMoveFileContents.size()))
     {
@@ -450,13 +597,11 @@ asynStatus Automation1MotorController::executeProfile()
     // after the program is compiled and started, it does not wait for the program to finish.
     if (!Automation1_Task_ProgramRun(controller_,
                                      PROFILE_MOVE_TASK_INDEX,
-                                     "epics_profile_move.ascript"))
+                                     "epics_cs_profile_move.ascript"))
     {
         executeOK = false;
         logError("Failed to compile and run profile move file.");
     }
-
-done:
 
     // Check for task 2 status, program running, program complete (task status enum).
     if (executeOK)

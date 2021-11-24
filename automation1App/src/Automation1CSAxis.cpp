@@ -21,6 +21,8 @@
 #include <vector>
 #include <algorithm>
 
+std::vector<Automation1CSAxis*> Automation1CSAxis::csAxisList_;
+
 //#include <chrono>
 //#include <thread>
 //std::this_thread::sleep_for(std::chrono::milliseconds(x));
@@ -73,13 +75,6 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
         {
             logError("Unable to get axis name!");
         }
-        
-        // Convert axis name to lowercase.
-        for(uint k=0; k<strlen(axName); k++)
-        {
-            axName[k] = tolower(axName[k]);
-        }
-        
 
         for(uint j=0; j<parsedAxisList.size(); j++)
         {
@@ -331,7 +326,7 @@ int Automation1CSAxis::getDataWaitingState(void)
 
 
 // Parses a delimited list of axis names and/or indices from the boot script, separating them into a vector of a single axis per element.
-// Axis names are converted to lowercase. Delimiter is assumed to be a comma.
+// Delimiter is assumed to be a comma.
 std::vector<std::string> Automation1CSAxis::parseAxisList( std::string axisList, std::string delimiter)
 {
     size_t pos_start = 0;
@@ -349,13 +344,7 @@ std::vector<std::string> Automation1CSAxis::parseAxisList( std::string axisList,
     }
     axisID = axisList.substr(pos_start, axisList.length()-pos_start);
     parsedList.push_back(axisID);
-    
-    // Convert to lowercase for comparisons.
-    for(uint i=0; i<parsedList.size(); i++)
-    {
-        std::transform(parsedList[i].begin(), parsedList[i].end(), parsedList[i].begin(), [](unsigned char c){ return std::tolower(c); });
-    }
-      
+   
    return parsedList;
 }
 
@@ -796,6 +785,36 @@ skip:
 } // poll
 
 
+/** Function to define the motor positions for a profile move.
+  * This function calls the base class method, then converts the positions to
+  * controller units.
+  * \param[in] positions Array of profile positions for this axis in user units.
+  * \param[in] numPoints The number of positions in the array.
+  */
+asynStatus Automation1CSAxis::defineProfile(double* positions, size_t numPoints)
+{
+    double resolution;
+    pC_->getDoubleParam(v_axisAddr_, pC_->motorRecResolution_, &resolution);
+    // Call the base class function (converts from EGU to steps)
+    asynStatus status = asynMotorAxis::defineProfile(positions, numPoints);
+    if (status) return status;
+
+    // Convert from steps to EGU.
+    for (size_t i = 0; i < numPoints; i++)
+    {
+        profilePositions_[i] = profilePositions_[i] * resolution;
+    }
+    return asynSuccess;
+}
+
+asynStatus Automation1CSAxis::readbackProfile()
+{
+    // Call the base class method
+    Automation1MotorAxis::readbackProfile();
+    return asynSuccess;
+}
+
+
 /** Logs an driver error and error details from the C API.  Made to reduce duplicate code.
   * \param[in] driverMessage A char array meant to convey where in execution the error occured.
 */
@@ -852,3 +871,4 @@ static void Automation1CSRegister(void)
 extern "C" {
     epicsExportRegistrar(Automation1CSRegister);
 }
+

@@ -78,12 +78,6 @@ private:
     bool registeringAxis = false;                                                                       // Set to true whilst registering is in progress then reset to false.
     bool axisRegistered = false;                                                                        // Set to true when axis has been registered.
     
-    // Axes to be used in a profile move.
-    std::vector<int> profileCSAxes_;
-
-    // The resolution of the motor axes. Needed for profile motion 
-    // because Automation1 works in EGU, not steps.
-    std::vector<double> profileCSAxesResolutions_;
 
     // Automation1 error codes and messages must be acquired through
     // calls to the C API.  To avoid duplicate code, we wrap calls 
@@ -93,6 +87,5 @@ private:
     friend class Automation1MotorController;
 };
 
-std::vector<Automation1CSAxis*> Automation1CSAxis::csAxisList_;
 
 #endif

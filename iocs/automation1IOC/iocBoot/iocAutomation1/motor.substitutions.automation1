@@ -2,7 +2,7 @@
 file "$(MOTOR)/db/basic_asyn_motor.db"
 {
 pattern
-{P,      N,       M,        DTYP,         PORT,  ADDR,     DESC,  EGU,   DIR,   VELO,  VBAS, ACCL, BDST, BVEL, BACC, MRES, 	PREC,   DHLM, DLLM,  INIT}
+{P,      N,       M,        DTYP,         PORT,  ADDR,     DESC,  EGU,   DIR,   VELO,  VBAS, ACCL, BDST, BVEL, BACC,     MRES, PREC,   DHLM, DLLM,  INIT}
 {Auto1:, 1, "m$(N)", "asynMotor",  Automation1,     0, "X1",       mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
 {Auto1:, 2, "m$(N)", "asynMotor",  Automation1,     1, "X2",       mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000003,    3,     16,    0,    ""}
 {Auto1:, 3, "m$(N)", "asynMotor",  Automation1,     2, "Centre",   mm,   Pos,    2.0,   0.1,   .2,    0,    1,   .2, .0000001,    3,     16,    0,    ""}
@@ -36,7 +36,7 @@ pattern
 file "$(MOTOR)/modules/motorAutomation1/automation1App/Db/Automation1MotorAxis.template"
 {
 pattern
-{     P,	M,        PORT,	ADDR,    TIMEOUT}
+{     P,	M,        PORT, 	ADDR,     TIMEOUT}
 {Auto1:, 	m1:, Automation1,	0,           	1}
 {Auto1:, 	m2:, Automation1,	1,           	1}
 {Auto1:, 	m3:, Automation1,	2,           	1}
