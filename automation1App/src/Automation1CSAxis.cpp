@@ -68,6 +68,9 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
     int availAxisCount = Automation1_Controller_AvailableAxisCount(pC_->controller_);
     int chrArrSz = 64;
     char axName[chrArrSz];
+    bool mustWait;
+    bool registrationClash;
+    bool ret;
     
     for(int i=0; i<availAxisCount; i++)
     {               
@@ -79,6 +82,7 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
         for(uint j=0; j<parsedAxisList.size(); j++)
         {
             // If the axis name is NOT an int AND it matches an actual axis name then store its index else we were already given the index so copy it over.
+            // Axis names are case sensitive.
             bool isint = isInteger(parsedAxisList[j]);
             if( !isint && (axName == parsedAxisList[j]) )
             {
@@ -89,7 +93,6 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
                 axisIndexList_[j] = std::stoi(parsedAxisList[j].c_str());
             }
         } // for j
-
     } // for i
     
     
@@ -104,15 +107,12 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
         Automation1_StatusConfig_AddAxisStatusItem(statusConfig_, axisIndexList_[i], Automation1AxisStatusItem_AxisFault, 0);
         this->numStatusItems_++;
     }
-
-
-    
+   
     // Keep a list of all CS/virtual Axes created.
     csAxisList_.push_back( this );
     
     // Check if the transformation script is already running, if it isn't then start it.
     Automation1TaskStatus taskStatusArr[TRANSFORM_TASK_INDEX+1];
-    bool ret;
     ret = Automation1_Task_GetStatus(pC_->controller_, taskStatusArr, TRANSFORM_TASK_INDEX+1);
     
     
@@ -146,9 +146,7 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
     }
 
 
-    bool mustWait = true;
-    bool registrationClash;
-
+    mustWait = true;
 
     // Register this CS/virtual axis with the controller script.
     // The number of checks here to prevent clashes between axes might be overkill but it runs through it pretty quickly anyway.
@@ -213,8 +211,8 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
 
             // Wait for DataWaiting to be set back to No before continuing.
             int dataWaitingState = -1;
-            //TODO: Make this not cout
-            std::cout << "Axis " << v_axisAddr_ << ": Waiting for controller to finish processing axis data..." << std::endl;
+
+            printf("Automation1 Axis %d: Waiting for controller to finish processing axis data...\n",v_axisAddr_);
             while(dataWaitingState != DATA_WAITING_NO)
             {
                 dataWaitingState = getDataWaitingState();
@@ -244,17 +242,16 @@ Automation1CSAxis::Automation1CSAxis(Automation1MotorController* pC, const char*
     {
         // Wait for $dataWaiting = DataWaiting.No before setting it to DataWaiting.Done
         int dataWaitingState = -1;
-        //TODO: Make this not cout
-        std::cout << "Axis " << v_axisAddr_ << ": Waiting for controller to finish processing final axis data..." << std::endl;
+
+        printf("Automation1 Axis %d: Waiting for controller to finish processing final axis data...\n",v_axisAddr_);
         while(dataWaitingState != DATA_WAITING_NO)
         {
             dataWaitingState = getDataWaitingState();
         }
-        //TODO: Make this not cout
-        std::cout << "Setting allDone." << std::endl;
+
+        printf("Automation1 Axis %d: Setting allDone.\n", v_axisAddr_);
         this->setDataWaitingState(DATA_WAITING_DONE);
-    }
-        
+    }       
 
     ctorComplete = true;
 } // ctor
@@ -372,6 +369,7 @@ extern "C" int Automation1CreateCSAxis(const char* portName, const char* transfo
     return(asynSuccess);
 }
 
+
 /** Move the motor by a relative amount or to an absolute position.
   * \param[in] position     The absolute position to move to (if relative=0) or the relative distance to move
   *                          by (if relative=1). Units=steps.
@@ -444,7 +442,8 @@ asynStatus Automation1CSAxis::moveVelocity(double minVelocity, double maxVelocit
         }
     }
     
-    // AeroScript: library function CS_MoveVelocity($CS_Name as string, $velocity as real, $RBV_Index as integer)
+    // AeroScript call: CS_MoveVelocity($CS_Name as string, $velocity as real, $RBV_Index as integer)
+    
     // The aeroscript library that receives this call uses the RBV global index (globalReadIndexPos_) to determine which virtual axis called it.
     // This is in case different coordinated movement is required on a per-axis basis.
     std::string strJogCmd = "CS_MoveVelocity(\"" + CS_Name_ + "\", " + std::to_string(adjustedVelocity) + "," + std::to_string(globalReadIndexPos_) +  ")";
@@ -459,7 +458,6 @@ asynStatus Automation1CSAxis::moveVelocity(double minVelocity, double maxVelocit
         logError("Failed to move axis.");
         return asynError;
     }
-
 }
 
 
@@ -566,11 +564,10 @@ asynStatus Automation1CSAxis::poll(bool* moving)
 {
     bool pollSuccessfull = true;
     
-    // if(ctorComplete) blocks so that the polling thread doesn't start trying to use uninitialised variables whilst the main thread is still in the constructor.
+// if(ctorComplete) blocks so that the polling thread doesn't start trying to use uninitialised variables whilst another thread is still in the constructor.
 if(ctorComplete)
 {
   
-    
     double results[this->numStatusItems_];
         // [axisstatus, drivestatus, axisfault] per axis.
     int axisStatus[this->axisIndexList_.size()];
@@ -657,6 +654,7 @@ if(ctorComplete)
     
 
     // Since the virtual axis doesn't have a real motor this param is set according to whatever value of MRES was specified in the boot script.
+    // These values being a little off can result in the motor position RBV also being a little off.
     pC_->getDoubleParam(v_axisAddr_,pC_->motorRecResolution_, &getMRES);
     countsPerUnitParam_ = 1.0 / getMRES;
 
@@ -667,6 +665,7 @@ if(ctorComplete)
     setDoubleParam(pC_->AUTOMATION1_C_Velocity_, velocityRBV);
     setDoubleParam(pC_->AUTOMATION1_C_FError_, positionError * countsPerUnitParam_);
     
+    // ---------- MOTION DONE -----------
     done = true;
     for(uint i=0; i<axisIndexList_.size(); i++)
     {   
@@ -678,6 +677,7 @@ if(ctorComplete)
     }
     setIntegerParam(pC_->motorStatusDone_, done);
     
+    // ---------- MOVING/DIRECTION -----------
     if (done)
     {
         *moving = false;
@@ -705,6 +705,7 @@ if(ctorComplete)
         }
     }
     
+    // ---------- ANY FAULT -----------
     faults = 0;
     for(uint i=0; i<axisIndexList_.size(); i++)
     {   
@@ -773,7 +774,7 @@ if(ctorComplete)
     setIntegerParam(pC_->motorStatusHomed_, homed);
 }
 skip:
-
+    // ---------- COMMS ERROR -----------
     setIntegerParam(pC_->motorStatusCommsError_, !pollSuccessfull);
     callParamCallbacks();
     if (!pollSuccessfull)

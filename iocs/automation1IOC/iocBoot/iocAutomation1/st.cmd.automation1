@@ -10,7 +10,7 @@ automation1_registerRecordDeviceDriver(pdbbase)
 #Automation1CreateController("Automation1", "000.000.000.000", 4, 200, 1000)
 Automation1CreateController("Automation1", "10.2.2.168", 4, 200, 1000)
 
-#motorNames must be a comma separated string.
+#motorNames (case sensitive) must be a comma separated string and globalVel/Pos must not use reserved indices (see CS_Defines.ascript or Automation1CSAxis.h)
 #Automation1CreateCSAxis(    portName,         transformScriptName,CS_Type,    CS_Name, globalVelRBV,globalPosRBV, globalPosDMD,CSAxisAddr, numCSAxes, motorNames )
 Automation1CreateCSAxis("Automation1", "CS_Transform_Slit.ascript",    "0", "slitTest",            3,	        4,            5,         0,	        2,       "A,B")
 Automation1CreateCSAxis("Automation1", "CS_Transform_Slit.ascript",    "0", "slitTest",            6,	        7,            8,         1,	        2,       "A,B")

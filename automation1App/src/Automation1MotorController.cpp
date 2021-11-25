@@ -25,9 +25,6 @@
 
 #include "Automation1CSAxis.h"
 
-//TODO: remove #include <iostream>
-#include <iostream>
-
 /** Creates a new Automation1MotorController object.
   *
   * \param[in] portName           The name of the asyn port that will be created for this driver.
@@ -351,11 +348,6 @@ asynStatus Automation1MotorController::buildProfile()
     }
     
     
-    //-------------------------------------------------------
-    // TODO: Add a way to retrieve data on virtual axes here.
-    //-------------------------------------------------------
-    
-    
     
     // Check that none of the underlying virtual axis motors are trying to be used as real motors in the same move.
     // (i.e. making sure that any given axis is either real or virtual and not both at once.)
@@ -466,8 +458,6 @@ asynStatus Automation1MotorController::buildProfile()
         profileMoveFileContents.append("SetupTaskTargetMode(TargetMode.Incremental)\n");
     }
 
-    // We start data collection just before the actual profile moves.
-    profileMoveFileContents.append("AppDataCollectionSnapshot()\n");
 
     // This block assembled the main part of the program.  Each profile time corresponds to one
     // movePtCommand in Aereoscript.
@@ -542,7 +532,6 @@ asynStatus Automation1MotorController::buildProfile()
     }
 
     profileMoveFileContents.append("WaitForMotionDone($allAxes)\n");
-    profileMoveFileContents.append("AppDataCollectionStop()\n");
     profileMoveFileContents.append("ParameterSetTaskValue(");
     profileMoveFileContents.append(std::to_string(PROFILE_MOVE_TASK_INDEX));
     profileMoveFileContents.append(", TaskParameter.MotionInterpolationMode, $motionInterpolationMode)\n");

@@ -7,7 +7,7 @@
 #include "Include/Automation1.h"
 #include <vector>
 
-#define TRANSFORM_TASK_INDEX 3
+#define TRANSFORM_TASK_INDEX            3
 
 // The following integer and string global indices on the controller should not be used for other purposes.
 // Additionally the definitions should match those contained in the "CS_Defines.ascript" controller file.
@@ -20,9 +20,9 @@
 #define RESERVED_SGLOBAL_CSTYPE		    2
 
 // Could probably be done with enums..
-#define DATA_WAITING_NO		    0
-#define DATA_WAITING_YES		1
-#define DATA_WAITING_DONE		2
+#define DATA_WAITING_NO		            0
+#define DATA_WAITING_YES		        1
+#define DATA_WAITING_DONE		        2
 
 
 class Automation1MotorController;
@@ -45,13 +45,6 @@ public:
     
     asynStatus readbackProfile();
     asynStatus defineProfile(double* positions, size_t numPoints);
-    //------------------------------------------------------------------------------------------------------
-    //asynStatus setPosition(double position);
-
-    // Needed for profile motion.
-    //
-    
-    //------------------------------------------------------------------------------------------------------
 
 private:
     
