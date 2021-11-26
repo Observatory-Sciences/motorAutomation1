@@ -3,6 +3,7 @@
 #   $(PORT)     - asyn port for this controller
 #   $(TIMEOUT)  - asyn timeout
 #
+
 ##############################################################
 # Acknowledge and clear faults on all axes and tasks.
 ##############################################################
@@ -24,3 +25,50 @@ record(waveform, "$(P)ExecuteCommand")
     field(NELM, "256")
     field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_EXECUTE_COMMAND")
 }
+
+##############################################################
+# Displays recent estimated controller processor usage.
+##############################################################
+record(ai, "$(P)ProcessorUsage")
+{
+    field(DESC, "Estimated processor usage")
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_PROC_USAGE")
+    field(SCAN, "I/O Intr")
+}
+
+##############################################################
+# Number of tasks on the controller currently enabled.
+##############################################################
+record(ai, "$(P)EnabledTasks")
+{
+    field(DESC, "Enabled tasks")
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_ENABLED_TASKS")
+    field(SCAN, "I/O Intr")
+}
+
+##############################################################
+# Stores task state of all tasks on the controller.
+##############################################################
+record(waveform, "$(P)TaskState")
+{
+    field(DESC, "Displays the state of all tasks")
+    field(DTYP, "asynInt32ArrayIn")
+    field(SCAN, "I/O Intr")
+    field(FTVL, "LONG")
+    field(NELM, "32")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_TASK_STATE")
+}
+
+
+
+
+
+
+
+
+
+
+
+
