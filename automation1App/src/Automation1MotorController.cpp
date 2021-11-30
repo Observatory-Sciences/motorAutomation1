@@ -90,7 +90,21 @@ Automation1MotorController::Automation1MotorController(const char* portName, con
         new Automation1MotorAxis(this, axis);
     }
     
+    std::string firmwareV, apiV;
+    double frmMaj, frmMin, frmPat, frmBui;
+    int32_t apiMaj, apiMin, apiPat;
+    
+    Automation1_Command_DriveGetItem(controller_, 1, 0, Automation1DriveItem_FirmwareVersionMajor, 0, &frmMaj);
+    Automation1_Command_DriveGetItem(controller_, 1, 0, Automation1DriveItem_FirmwareVersionMinor, 0, &frmMin);
+    Automation1_Command_DriveGetItem(controller_, 1, 0, Automation1DriveItem_FirmwareVersionPatch, 0, &frmPat);
+    Automation1_Command_DriveGetItem(controller_, 1, 0, Automation1DriveItem_FirmwareVersionBuild, 0, &frmBui);
 
+    firmwareV = std::to_string(int(frmMaj)) + "." + std::to_string(int(frmMin)) + "." + std::to_string(int(frmPat)) + "." + std::to_string(int(frmBui));
+    setStringParam(AUTOMATION1_C_FirmwareVersion_, firmwareV.c_str());
+    
+    Automation1_GetApiVersion(&apiMaj, &apiMin, &apiPat);
+    apiV = std::to_string(apiMaj) + "." + std::to_string(apiMin) + "." + std::to_string(apiPat);
+    setStringParam(AUTOMATION1_C_APIVersion_, apiV.c_str());
     
     Automation1_StatusConfig_Create(&(pollStatusConfig_));
 
@@ -116,6 +130,8 @@ void Automation1MotorController::createAsynParams(void)
     createParam(AUTOMATION1_C_ExecuteCommandString, asynParamOctet,     &AUTOMATION1_C_ExecuteCommand_);
     createParam(AUTOMATION1_C_EnabledTasksString,   asynParamInt32,     &AUTOMATION1_C_EnabledTasks_);
     createParam(AUTOMATION1_C_TaskStateString,      asynParamInt32Array,&AUTOMATION1_C_TaskState_);
+    createParam(AUTOMATION1_C_FirmwareVersionString,asynParamOctet,     &AUTOMATION1_C_FirmwareVersion_);
+    createParam(AUTOMATION1_C_APIVersionString,     asynParamOctet,     &AUTOMATION1_C_APIVersion_);
 }
 
 /* * Creates a new Automation1 controller object.

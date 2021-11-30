@@ -26,7 +26,9 @@
 #define AUTOMATION1_C_ExecuteCommandString  "AUTOMATION1_C_EXECUTE_COMMAND"
 #define AUTOMATION1_C_EnabledTasksString    "AUTOMATION1_C_ENABLED_TASKS"
 #define AUTOMATION1_C_TaskStateString       "AUTOMATION1_C_TASK_STATE"
-#define NUM_AUTOMATION1_PARAMS 6
+#define AUTOMATION1_C_FirmwareVersionString "AUTOMATION1_C_FIRMWARE_VERSION"
+#define AUTOMATION1_C_APIVersionString      "AUTOMATION1_C_API_VERSION"
+#define NUM_AUTOMATION1_PARAMS 8
 
 
 class epicsShareClass Automation1MotorController : public asynMotorController
@@ -64,6 +66,8 @@ protected:
     int AUTOMATION1_C_ExecuteCommand_;
     int AUTOMATION1_C_EnabledTasks_;
     int AUTOMATION1_C_TaskState_;
+    int AUTOMATION1_C_FirmwareVersion_;
+    int AUTOMATION1_C_APIVersion_;
     int parameters[NUM_AUTOMATION1_PARAMS];
 
 private:
