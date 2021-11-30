@@ -24,10 +24,9 @@
 #define AUTOMATION1_C_VelocityString        "AUTOMATION1_C_VELOCITY"
 #define AUTOMATION1_C_FErrorString          "AUTOMATION1_C_FERROR"
 #define AUTOMATION1_C_ExecuteCommandString  "AUTOMATION1_C_EXECUTE_COMMAND"
-#define AUTOMATION1_C_ProcUsageString       "AUTOMATION1_C_PROC_USAGE"
 #define AUTOMATION1_C_EnabledTasksString    "AUTOMATION1_C_ENABLED_TASKS"
 #define AUTOMATION1_C_TaskStateString       "AUTOMATION1_C_TASK_STATE"
-#define NUM_AUTOMATION1_PARAMS 7
+#define NUM_AUTOMATION1_PARAMS 6
 
 
 class epicsShareClass Automation1MotorController : public asynMotorController
@@ -63,7 +62,6 @@ protected:
     int AUTOMATION1_C_Velocity_;
     int AUTOMATION1_C_FError_;
     int AUTOMATION1_C_ExecuteCommand_;
-    int AUTOMATION1_C_ProcUsage_;
     int AUTOMATION1_C_EnabledTasks_;
     int AUTOMATION1_C_TaskState_;
     int parameters[NUM_AUTOMATION1_PARAMS];
@@ -74,13 +72,12 @@ private:
     // actually execute commands on the controller.
     Automation1Controller controller_;
     int availTaskCount_;
-    int numPollDataPoints_ = CONTROLLER_POLL_NUM_DATA_POINTS;                       // Number of data points per data signal to collect during controller polling.
-    int numPollDataSignals_ = 0;                                                    // This is updated in the constructor after each signal is successfully added.
+
     Automation1TaskStatus taskStatusArr[MAX_AUTOMATION1_TASK];
 
     // A handle that will be used to specify the data logged for
     // readbacks.
-    Automation1DataCollectionConfig dataCollectionConfig_, pollDataConfig_;
+    Automation1DataCollectionConfig dataCollectionConfig_;
     Automation1StatusConfig pollStatusConfig_;
 
     // Axes to be used in a profile move.

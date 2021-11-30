@@ -90,14 +90,7 @@ Automation1MotorController::Automation1MotorController(const char* portName, con
         new Automation1MotorAxis(this, axis);
     }
     
-    // Create data config manager and add data signals to collect: Estimated Processor Usage.
-    Automation1_DataCollectionConfig_Create(Automation1DataCollectionFrequency_1kHz, numPollDataPoints_, &pollDataConfig_);
-    
-    Automation1_DataCollectionConfig_AddSystemDataSignal(pollDataConfig_, Automation1SystemDataSignal_EstimatedProcessorUsage, 0);
-    numPollDataSignals_++;
-    
-    
-    
+
     
     Automation1_StatusConfig_Create(&(pollStatusConfig_));
 
@@ -111,7 +104,6 @@ Automation1MotorController::Automation1MotorController(const char* portName, con
 Automation1MotorController::~Automation1MotorController()
 {
     Automation1_DataCollectionConfig_Destroy(dataCollectionConfig_);
-    Automation1_DataCollectionConfig_Destroy(pollDataConfig_);
     Automation1_StatusConfig_Destroy(pollStatusConfig_);
     Automation1_Disconnect(controller_);
 }
@@ -122,7 +114,6 @@ void Automation1MotorController::createAsynParams(void)
     createParam(AUTOMATION1_C_VelocityString,       asynParamFloat64,   &AUTOMATION1_C_Velocity_);
     createParam(AUTOMATION1_C_FErrorString,         asynParamFloat64,   &AUTOMATION1_C_FError_);
     createParam(AUTOMATION1_C_ExecuteCommandString, asynParamOctet,     &AUTOMATION1_C_ExecuteCommand_);
-    createParam(AUTOMATION1_C_ProcUsageString,      asynParamFloat64,   &AUTOMATION1_C_ProcUsage_);
     createParam(AUTOMATION1_C_EnabledTasksString,   asynParamInt32,     &AUTOMATION1_C_EnabledTasks_);
     createParam(AUTOMATION1_C_TaskStateString,      asynParamInt32Array,&AUTOMATION1_C_TaskState_);
 }
@@ -144,7 +135,7 @@ extern "C" int Automation1CreateController(const char* portName, const char* hos
 
 
 /** Polls the controller.
-  * Collects data on recent processor usage, number of tasks enabled and the state of all tasks.
+  * Collects data on number of tasks enabled and the state of all tasks.
   * 
   *        
   * 
@@ -155,15 +146,6 @@ asynStatus Automation1MotorController::poll()
 {
     bool pollSuccessfull = true;
     double enabledTasks;
-    double procUsage[numPollDataPoints_*numPollDataSignals_];
-    double avgProcUsage=0;
-    
-    // Start data collection for processor usage. Collects 10 points at 1kHz so shouldn't take long for data to be available.
-    if(!Automation1_DataCollection_Start(controller_, pollDataConfig_, Automation1DataCollectionMode_Snapshot))
-    {
-        pollSuccessfull = false;
-        goto skip;
-    }
     
     // Check which tasks are currently enabled.
     if(!Automation1_Parameter_GetSystemValue(controller_, Automation1SystemParameterId_EnabledTasks, &enabledTasks))
@@ -187,21 +169,6 @@ asynStatus Automation1MotorController::poll()
         taskState[i] = taskStatusArr[i].TaskState;
     }
     doCallbacksInt32Array(taskState, MAX_AUTOMATION1_TASK, AUTOMATION1_C_TaskState_, 0);
-
-    // Retrieve processor usage data. (Can always move this closer to the end of ::poll if data isn't yet ready.)
-    // Average the processor usage points into a single number then set param.
-    if(!Automation1_DataCollection_GetResults(controller_, pollDataConfig_, procUsage, numPollDataPoints_*numPollDataSignals_))
-    {
-        pollSuccessfull = false;
-        goto skip;
-    }
-    
-    for(int i=0; i<numPollDataPoints_; i++)
-    {
-        avgProcUsage += procUsage[i];
-    }
-    avgProcUsage /= numPollDataPoints_;
-    setDoubleParam(AUTOMATION1_C_ProcUsage_, avgProcUsage);
     
     
 skip:
