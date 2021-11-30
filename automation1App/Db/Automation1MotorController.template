@@ -27,17 +27,6 @@ record(waveform, "$(P)ExecuteCommand")
 }
 
 ##############################################################
-# Displays recent estimated controller processor usage.
-##############################################################
-record(ai, "$(P)ProcessorUsage")
-{
-    field(DESC, "Estimated processor usage")
-    field(DTYP, "asynFloat64")
-    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_PROC_USAGE")
-    field(SCAN, "I/O Intr")
-}
-
-##############################################################
 # Number of tasks on the controller currently enabled.
 ##############################################################
 record(ai, "$(P)EnabledTasks")
@@ -61,14 +50,24 @@ record(waveform, "$(P)TaskState")
     field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_TASK_STATE")
 }
 
+##############################################################
+# Firmware version
+##############################################################
+record(stringin, "$(P)FirmwareVersion")
+{
+    field(DESC, "Version of firmware")
+    field(DTYP, "asynOctetRead")
+    field(SCAN, "I/O Intr")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_FIRMWARE_VERSION")
+}
 
-
-
-
-
-
-
-
-
-
-
+##############################################################
+# API version
+##############################################################
+record(stringin, "$(P)APIVersion")
+{
+    field(DESC, "Version of C API")
+    field(DTYP, "asynOctetRead")
+    field(SCAN, "I/O Intr")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_API_VERSION")
+}
