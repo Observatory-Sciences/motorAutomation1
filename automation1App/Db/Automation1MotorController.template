@@ -60,6 +60,21 @@ record(stringin, "$(P)FirmwareVersion")
     field(SCAN, "I/O Intr")
     field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_FIRMWARE_VERSION")
 }
+<<<<<<< HEAD
+=======
+
+##############################################################
+# API version
+##############################################################
+record(stringin, "$(P)APIVersion")
+{
+    field(DESC, "Version of C API")
+    field(DTYP, "asynOctetRead")
+    field(SCAN, "I/O Intr")
+    field(INP,  "@asyn($(PORT),0,$(TIMEOUT=4))AUTOMATION1_C_API_VERSION")
+}
+
+>>>>>>> e32f04ab1cc8e36530043a52281f367cf4a31eb4
 
 ##############################################################
 # API version
