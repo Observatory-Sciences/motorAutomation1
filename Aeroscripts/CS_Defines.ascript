@@ -1,0 +1,24 @@
+//####################################################################################################
+// Constants for use in co-ordinate systems.
+// !!! This file must only contain preprocessor directives. !!!
+//####################################################################################################
+
+// This list can always be extended and the transformation scripts modified to use specific consts
+// defined here.
+// For example the slit CS could use "#define MAX_SLIT_AXES 2"
+// and a hexapod could use "#define MAX_HEXAPOD_AXES 6" etc.
+
+#define MAX_VAXES			        10				// Max number of axes per CS.
+#define MAX_SLIT_AXES 		        2				// Number of axes for a slit CS.
+
+
+// Reserved global indices are used by EPICS to transfer data into the script.
+// These must match those defined in Automation1CSAxis.h
+
+#define RESERVED_IGLOBAL_RBV_VEL	0				// First  $iglobal index reserved for EPICS.	Used for the velocity RBV global index of a virtual axis in this CS.
+#define RESERVED_IGLOBAL_RBV_POS	1				// First  $iglobal index reserved for EPICS.	Used for the position RBV global index of a virtual axis in this CS.
+#define RESERVED_IGLOBAL_DMD_POS	2				// Second $iglobal index reserved for EPICS.	Used for the position DMD global index of a virtual axis in this CS.
+#define RESERVED_IGLOBAL_DATA		3				// Third  $iglobal index reserved for EPICS.	Used to update $dataWaiting from EPICS.
+#define RESERVED_SGLOBAL_CSNAME		0				// First  $sglobal index reserved for EPICS.	Used for the CS Name.
+#define RESERVED_SGLOBAL_AXISLIST	1				// Second $sglobal index reserved for EPICS.	Used for the list of motors used in this CS.
+#define RESERVED_SGLOBAL_CSTYPE		2				// Third  $sglobal index reserved for EPICS.	Used for the type of CS being created.

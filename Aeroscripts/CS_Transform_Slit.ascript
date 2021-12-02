@@ -1,0 +1,131 @@
+//****************************************************************************************************
+//* Program to handle data provided via EPICS for a single slit experimental setup.
+//* A similar script should be written for each different CS type that is required
+//* and entered into the boot script.
+//* This script will handle the IOC restarting but the IOC needs to be restarted if 
+//* this script is stopped.
+//****************************************************************************************************
+
+
+// Import data handling library. (Or pre-load onto controller and remove import statement.)
+//import "EPICS_CS.a1lib" as static
+
+// Include a file which defines several constants.
+#include "CS_Defines.ascript"
+
+
+//####################################################################################################
+// Main program.
+// Waits for EPICS to send data over, processes it and then enters an endless loop to calculate
+// the forward kinetic transformation for a slit system.
+//####################################################################################################
+program
+	// *********************************	SETUP	*********************************
+	// Declare data structs.
+	var $CSData as CSData											// Size of this array determines number of CS that can be created.
+	var $dataWaiting as DataWaiting = DataWaiting.No				// EPICS is responsible for setting $dataWaiting to .Yes and to .Done
+	
+	// Wait for all virtual axes to be registered. (When $dataWaiting == DataWaiting.Done)
+	while($dataWaiting != DataWaiting.Done) 
+		checkDataWaiting($dataWaiting)								// Checks to see if EPICS has sent any data.
+		if($dataWaiting == DataWaiting.No)							// If there's no data yet then wait for some.
+			Dwell(1)												
+		elseif($dataWaiting == DataWaiting.Yes)						// If there is data available then process it.
+			getCSDataFromGlobals($CSData, $dataWaiting)				// Sets $dataWaiting (and its global) back to DataWaiting.No just before returning.
+			Dwell(1)
+		end // if
+	end // while
+	
+	saveCSData($CSData, $CSData.CS_Name+".txt")						// Now that the CSData has all been received save it to a file on the controller
+																	// so that the move script can pick it up.
+	// Named indices for clarity. 
+	var $RBV_C_VEL = $CSData.RBV_VEL[0]								// Global index used for: Readback value of centrepoint velocity.
+	var $RBV_C_POS = $CSData.RBV_POS[0]								// Global index used for: Readback value of centrepoint position.
+	var $DMD_C_POS = $CSData.DMD_POS[0]								// Global index used for: Demand value of centrepoint position.
+	var $RBV_W_VEL = $CSData.RBV_VEL[1]								// Global index used for: Readback value of slit width velocity.									
+	var $RBV_W_POS = $CSData.RBV_POS[1]								// Global index used for: Readback value of slit width.
+	var $DMD_W_POS = $CSData.DMD_POS[1]								// Global index used for: Demand value of slit width.
+
+	
+	var $realAxes[MAX_VAXES] as axis								// List of real axes used in this CS.
+	var $realMotorPos[MAX_VAXES] as real							// Position readback values of raw motors used in this CS.
+	var $realMotorVel[MAX_VAXES] as real							// Velocity readback values of raw motors used in this CS.
+	var $centrePos as real	 						= 0				// Actual centrepoint position.
+	var $widthPos as real 							= 0				// Actual slit width.
+	var $centreVel as real	 						= 0				// Actual centrepoint velocity.
+	var $widthVel as real 							= 0				// Actual slit width velocity.
+	var $axNum as integer											// Loop counter.
+	
+	// Copy axis list into variable.
+	for $axNum = 0 to $CSData.num_rAxes-1
+		$realAxes[$axNum] = $CSData.axes[$axNum]
+	end
+	
+	// *********************************	MAIN LOOP	*********************************
+	// Start an endless loop
+	while (true)
+	
+		// Get positions and velocities of real motors then perform forward kinematic transform using them.
+		getAxisPos($realAxes, $CSData.num_rAxes, $realMotorPos)
+		fwdSlitXForm($realMotorPos, $centrePos, $widthPos)
+		
+		getAxisVel($realAxes, $CSData.num_rAxes, $realMotorVel)
+		fwdSlitXForm($realMotorVel, $centreVel, $widthVel)
+		
+		// Store the results in $rglobal
+		$rglobal[$RBV_C_POS] = $centrePos
+		$rglobal[$RBV_W_POS] = $widthPos
+		
+		$rglobal[$RBV_C_VEL] = $centreVel
+		$rglobal[$RBV_W_VEL] = $widthVel
+		
+		// The following block should deal with an IOC restart.
+		checkDataWaiting($dataWaiting)
+		if($dataWaiting == DataWaiting.Yes)
+			ProgramRestart()
+		end
+		
+	end // while(true)
+	
+end // program
+
+
+//####################################################################################################
+// Forward transformation for a slit co-ordinate system.
+//####################################################################################################
+
+function fwdSlitXForm($realMotor[] as real, ref $centreVal as real, ref $widthVal as real)
+
+	$centreVal = ($realMotor[0] + $realMotor[1])*0.5
+	$widthVal  =  $realMotor[1] - $realMotor[0]
+	
+end
+
+
+//####################################################################################################
+// Gets the actual position of the real axes being used for the co-ordinate system.
+//####################################################################################################
+
+function getAxisPos($realAxes[] as axis, $numAxes as integer, ref $realMotorPos[] as real)
+
+	var $axNum as integer
+	
+	for $axNum = 0 to $numAxes-1
+		$realMotorPos[$axNum] = StatusGetAxisItem($realAxes[$axNum], AxisStatusItem.PositionFeedbackDrive)
+	end
+end
+
+
+//####################################################################################################
+// Gets the actual velocity of the real axes being used for the co-ordinate system.
+//####################################################################################################
+
+function getAxisVel($realAxes[] as axis, $numAxes as integer, ref $realMotorVel[] as real)
+
+	var $axNum as integer
+	
+	for $axNum = 0 to $numAxes-1
+		$realMotorVel[$axNum] = StatusGetAxisItem($realAxes[$axNum], AxisStatusItem.VelocityFeedback)
+	end
+	
+end

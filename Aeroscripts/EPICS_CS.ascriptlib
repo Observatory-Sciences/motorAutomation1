@@ -1,0 +1,546 @@
+// ******************************************************************************************************
+// * EPICS_CS.ascriptlib contains functions related to co-ordinate system data handling.				*
+// * Functions are overloaded to be able to deal with either a single CS or an array of them.			*
+// * This library must be compiled and auto-imported in order to expose its library calls to EPICS.		*
+// * The task used for profile moves will require its stack size increasing to at least 4096 or 8192	*
+// ******************************************************************************************************
+// Include a file which defines several constants.
+#include "CS_Defines.ascript"
+
+// ####################################################################################################
+// # DataWaiting.Yes  = New data for a virtual axis has been placed in globals and is ready to be read.
+// # DataWaiting.No   = No new virtual axis data is available but more is expected in the future.
+// # DataWaiting.Done = All virtual axes have been registered and no more data is expected.
+// ####################################################################################################
+library enum DataWaiting
+	No
+	Yes
+	Done
+end
+
+// ####################################################################################################
+// # The type of CS available.
+// # There should be an option made available for all CS types to be used.
+// ####################################################################################################
+library enum CSType
+	Slit
+	//Other
+end
+
+// ####################################################################################################
+// # All virtual axes that are part of a given CS should specify the same CS_Name and the same real axes
+// # in the same order.
+// # If this does not happen then depending on which CS axis initialises first each real motor might
+// # have a different role in the CS when re-initialising.
+// ####################################################################################################
+library struct CSData
+
+    $CS_Name as string(20)      		// Unique name of this co-ordinate system. All virtual axes must specify the same CS Name.
+	$CS_Type as CSType					// The type of CS this is.
+	$RBV_VEL[MAX_VAXES] as integer		// $rglobal indices to use to store virtual motor velocity readback values.
+    $RBV_POS[MAX_VAXES] as integer     	// $rglobal indices to use to store virtual motor position readback values.
+    $DMD_POS[MAX_VAXES] as integer     	// $rglobal indices to use to store virtual motor position demand values.
+    $axes[MAX_VAXES] as axis       		// Real axes to actually be commanded to motion.
+	$num_vAxes as integer				// Number of virtual axes currently registered as part of this CS.
+	$num_rAxes as integer				// Number of real axes currently registered as part of this CS.
+
+end // struct CSData
+
+// ####################################################################################################
+// # Populates a CSData struct from info that was provided in the EPICS driver boot script and written 
+// # to global variables.
+// ####################################################################################################
+library function createCSData(ref $new_CSData as CSData, $new_CS_Name as string, $new_CS_Type as CSType, $new_RBV_VEL as integer, $new_RBV_POS as integer, $new_DMD_POS as integer, $new_axes[] as axis, $num_rAxes as integer)
+    
+    $new_CSData.CS_Name 	= $new_CS_Name
+	$new_CSData.CS_Type		= $new_CS_Type
+	$new_CSData.RBV_VEL[0]	= $new_RBV_VEL
+    $new_CSData.RBV_POS[0] 	= $new_RBV_POS
+    $new_CSData.DMD_POS[0] 	= $new_DMD_POS
+	var $cnt as integer = 0
+	foreach var $axis in $new_axes
+    	$new_CSData.axes[$cnt] = $axis
+		$cnt++
+	end
+	$new_CSData.num_vAxes = 1
+	$new_CSData.num_rAxes = $num_rAxes
+
+end // lib func createCSData
+
+// ####################################################################################################
+// # Searches through an array of CSData to determine if a specific CS_Name is present.
+// # Returns the index of the CS if a match is found.
+// # Returns -1 if a match is not found.
+// ####################################################################################################
+library function doesCSExist(ref $CSDataArr[] as CSData, $find_CS_Name as string) as integer
+
+    var $ind as integer = -1
+
+	var $i as integer
+	for $i = 0 to length($CSDataArr)-1
+        $ind++
+		if ( StringEquals($CSDataArr[$i].CS_Name, $find_CS_Name) == 1 )
+            return $ind
+        end // if
+    end // foreach
+    return -1
+
+end // lib func doesCSExist
+
+// ####################################################################################################
+// # Same as above function but for a single CS. Check if the CS passed has the same name.
+// ####################################################################################################
+library function doesCSExist(ref $CSData as CSData, ref $find_CS_Name as string) as integer
+
+	if ( StringEquals($CSData.CS_Name, $find_CS_Name) == 1 )
+        return 0
+    end // if
+    return -1
+
+end // lib func doesCSExist
+
+// ####################################################################################################
+// # Takes an existing CSData structure and adds the extra indices to the list of globals used for
+// # this CS system which correspond to the RBV/DMD for the new virtual axis being added.
+// # If we're appending then the CS_Name must be the same and we assume that the
+// # real axes to be used for this CS were properly set when the CSData was created.
+// ####################################################################################################
+library function appendCSData(ref $existing_CSData as CSData, $new_RBV_VEL as integer, $new_RBV_POS as integer, $new_DMD_POS as integer)
+
+	// If adding a new virtual axis would cause an indexing error then return without performing the operation.
+	if($existing_CSData.num_vAxes +1 > MAX_VAXES)
+		return
+	end
+	
+	$existing_CSData.RBV_VEL[$existing_CSData.num_vAxes] = $new_RBV_VEL
+    $existing_CSData.RBV_POS[$existing_CSData.num_vAxes] = $new_RBV_POS
+    $existing_CSData.DMD_POS[$existing_CSData.num_vAxes] = $new_DMD_POS
+	$existing_CSData.num_vAxes++
+
+end // lib func appendCSData
+
+// ####################################################################################################
+// # Main initialisation function. 
+// # Checks if the given CS has already been registered by another virtual axis.
+// # If the CS has not been registered then it will be registered using the info provided.
+// # If the CS has already been registered then this will cause the additional RBV/DMD values 
+// # to be appended to the list.
+// ####################################################################################################
+library function registerVirtualAxis(ref $CSDataArr[] as CSData, $new_CS_Name as string, $new_CS_Type as CSType, $new_RBV_VEL as integer, $new_RBV_POS as integer, $new_DMD_POS as integer, $new_axes[] as axis, $num_rAxes as integer)
+    
+    var $ind as integer
+    var $num_CS as integer = getCSCount($CSDataArr)
+	
+    $ind = doesCSExist($CSDataArr, $new_CS_Name)
+	
+    if( $ind < 0 )
+		createCSData($CSDataArr[$num_CS], $new_CS_Name, $new_CS_Type, $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS, $new_axes, $num_rAxes)
+    else
+        appendCSData($CSDataArr[$ind], $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS)
+    end // if
+
+end // lib func registerVirtualAxis
+
+// ####################################################################################################
+// # Same as above function but for a single CS.
+// ####################################################################################################
+library function registerVirtualAxis(ref $CSData as CSData, $new_CS_Name as string, $new_CS_Type as CSType, $new_RBV_VEL as integer, $new_RBV_POS as integer, $new_DMD_POS as integer, $new_axes[] as axis, $num_rAxes as integer)
+    
+    var $ind as integer
+    $ind = doesCSExist($CSData, $new_CS_Name)
+	
+    if( $ind < 0 )
+		createCSData($CSData, $new_CS_Name, $new_CS_Type, $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS, $new_axes, $num_rAxes)
+    else
+        appendCSData($CSData, $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS)
+    end // if
+
+end // lib func registerVirtualAxis
+
+
+// ####################################################################################################
+// # Reads through a reserved subset of global variables for info passed in from EPICS and then
+// # obtains a list of real axes before registering the virtual axis.
+// ####################################################################################################
+library function getCSDataFromGlobals(ref $CSDataArr[] as CSData, ref $dataWaiting as DataWaiting)
+
+	var $new_CS_Name 	as string(20)
+	var $new_CS_Type	as CSType
+	var $new_RBV_VEL	as integer
+	var $new_RBV_POS 	as integer
+	var $new_DMD_POS 	as integer
+	var $new_axes_str 	as string(32)
+	
+	if($dataWaiting == DataWaiting.Yes)
+		// Read in data.	
+    	$new_CS_Name  	= $sglobal[RESERVED_SGLOBAL_CSNAME]
+		$new_CS_Type	= StringToInteger($sglobal[RESERVED_SGLOBAL_CSTYPE])
+		$new_RBV_VEL	= $iglobal[RESERVED_IGLOBAL_RBV_VEL]
+    	$new_RBV_POS	= $iglobal[RESERVED_IGLOBAL_RBV_POS]
+    	$new_DMD_POS	= $iglobal[RESERVED_IGLOBAL_DMD_POS]
+    	$new_axes_str	= $sglobal[RESERVED_SGLOBAL_AXISLIST]
+	end
+		
+	var $new_axes[MAX_VAXES] as axis
+	var $num_rAxes as integer
+	
+	$num_rAxes = parseAxisList($new_axes_str, $new_axes)
+    registerVirtualAxis($CSDataArr, $new_CS_Name, $new_CS_Type, $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS, $new_axes, $num_rAxes)
+	
+	// Clear data waiting flag and set corresponding global.
+	$dataWaiting = DataWaiting.No
+	$iglobal[RESERVED_IGLOBAL_DATA] = $dataWaiting
+
+end // lib func getCSDataFromGlobals[]
+
+// ####################################################################################################
+// # Same as above function but for a single CS.
+// ####################################################################################################
+library function getCSDataFromGlobals(ref $CSData as CSData, ref $dataWaiting as DataWaiting)
+
+	var $new_CS_Name 	as string(20)
+	var $new_CS_Type	as CSType
+	var $new_RBV_VEL 	as integer
+	var $new_RBV_POS 	as integer
+	var $new_DMD_POS 	as integer
+	var $new_axes_str 	as string(32)
+	
+	if($dataWaiting == DataWaiting.Yes)
+		// Read in data.	
+    	$new_CS_Name  	= $sglobal[RESERVED_SGLOBAL_CSNAME]
+		$new_CS_Type	= StringToInteger($sglobal[RESERVED_SGLOBAL_CSTYPE])
+		$new_RBV_VEL	= $iglobal[RESERVED_IGLOBAL_RBV_VEL]
+    	$new_RBV_POS	= $iglobal[RESERVED_IGLOBAL_RBV_POS]
+    	$new_DMD_POS	= $iglobal[RESERVED_IGLOBAL_DMD_POS]
+    	$new_axes_str	= $sglobal[RESERVED_SGLOBAL_AXISLIST]
+	end
+	
+	var $new_axes[MAX_VAXES] as axis
+	var $num_rAxes as integer
+	
+	$num_rAxes = parseAxisList($new_axes_str, $new_axes)
+    registerVirtualAxis($CSData, $new_CS_Name, $new_CS_Type, $new_RBV_VEL, $new_RBV_POS, $new_DMD_POS, $new_axes, $num_rAxes)
+	
+	// Clear data waiting flag and set corresponding global.
+	$dataWaiting = DataWaiting.No
+	$iglobal[RESERVED_IGLOBAL_DATA] = $dataWaiting
+
+end // lib func getCSDataFromGlobals
+
+
+// ####################################################################################################
+// # Given a string containing a list of up to MAX_VAXES axis names and/or indices this function will 
+// # convert that list to axis objects stored in $newAxes and return the number of axes in the list.
+// ####################################################################################################
+library function parseAxisList(ref $axisStr as string, ref $newAxes[] as axis) as integer
+
+	var $split_str[MAX_VAXES] as string(20)
+    StringSplit($axisStr, [","], $split_str)
+	
+	var $cnt as integer = 0
+    foreach var $str in $split_str
+	
+        if(StringIsInteger($str))
+            $newAxes[$cnt] = @StringToInteger($str)
+			$cnt++
+		elseif(StringEquals($str,"")==0)
+			$newAxes[$cnt] = @StringTrim($str)
+			$cnt++
+        end // if	
+    end // foreach
+	return $cnt
+end // lib func parseAxisList
+
+
+// ####################################################################################################
+// # Iterates through $CSDataArr and counts how many of the CS Names aren't blank.
+// # Returns number of CS currently set up.
+// # Additional CS should be placed in this index of the CSDataArr array.
+// ####################################################################################################
+library function getCSCount(ref $CSDataArr[] as CSData) as integer
+	var $numCS as integer = 0
+	var $i as integer
+	
+	for $i = 0 to length($CSDataArr)-1
+		if( StringEquals($CSDataArr[$i].CS_Name, "") == 0 )
+			$numCS++
+		end
+	end
+	return $numCS
+end
+
+// ####################################################################################################
+// # Updates $dataWaiting with the value stored in the global variable which is settable from EPICS.
+// ####################################################################################################
+library function checkDataWaiting(ref $dataWaiting as DataWaiting)
+	$dataWaiting = $iglobal[RESERVED_IGLOBAL_DATA]
+end
+
+// ####################################################################################################
+// # Re-initialises all reserved global indices. Used for testing only.
+// ####################################################################################################
+library function clearReservedGlobals()
+
+	$iglobal[RESERVED_IGLOBAL_RBV_VEL] 	= 0
+	$iglobal[RESERVED_IGLOBAL_RBV_POS] 	= 0
+	$iglobal[RESERVED_IGLOBAL_DMD_POS] 	= 0
+	$iglobal[RESERVED_IGLOBAL_DATA] 	= 0
+	
+	$sglobal[RESERVED_SGLOBAL_CSNAME] 	= ""
+	$sglobal[RESERVED_SGLOBAL_AXISLIST] = ""
+
+end
+	
+// ####################################################################################################
+// # Writes the used CSData elements to file in simple text format and pads to maintain the data structure.
+// # File written has name based on the CS name so each CS used will have its own file.
+// ####################################################################################################
+library function saveCSData(ref $CSData as CSData, $filename as string)
+var $cnt as integer
+var $fn as handle
+	$fn = FileOpenText($filename, FileMode.Overwrite)
+	FileTextWriteString($fn, $CSData.CS_Name + "\n")
+	FileTextWriteString($fn, IntegerToString($CSData.CS_Type) + "\n")
+	
+for $cnt = 0 to $CSData.num_rAxes-1
+	FileTextWriteString($fn, RealToString($CSData.RBV_VEL[$cnt])+"\n")
+end
+for $cnt = $CSData.num_rAxes to MAX_VAXES-1
+	FileTextWriteString($fn, "-1\n")
+end
+
+for $cnt = 0 to $CSData.num_rAxes-1
+	FileTextWriteString($fn, RealToString($CSData.RBV_POS[$cnt])+"\n")
+end
+for $cnt = $CSData.num_rAxes to MAX_VAXES-1
+	FileTextWriteString($fn, "-1\n")
+end
+
+for $cnt = 0 to $CSData.num_rAxes-1
+	FileTextWriteString($fn, RealToString($CSData.DMD_POS[$cnt])+"\n")
+end
+for $cnt = $CSData.num_rAxes to MAX_VAXES-1
+	FileTextWriteString($fn, "-1\n")
+end
+
+for $cnt = 0 to $CSData.num_rAxes-1
+	FileTextWriteString($fn, AxisToString($CSData.axes[$cnt])+"\n")
+end
+for $cnt = $CSData.num_rAxes to MAX_VAXES-1
+	FileTextWriteString($fn, "-1\n")
+end
+	
+	FileTextWriteString($fn, IntegerToString($CSData.num_vAxes)+"\n")
+	FileTextWriteString($fn, IntegerToString($CSData.num_rAxes))
+	
+	FileClose($fn)
+end
+
+// ####################################################################################################
+// # Reads the CSData elements from file in simple text format and pads to maintain the data structure.
+// # File read from based on the CS name provided.
+// ####################################################################################################
+library function getCSData(ref $CSData as CSData, $filename as string)
+var $cnt as integer
+var $fn as handle
+var $strIN as string
+	$fn = FileOpenText($filename, FileMode.Read)
+	
+	$CSData.CS_Name = FileTextReadLine($fn)
+	$CSData.CS_Type = StringToInteger(FileTextReadLine($fn))
+	
+for $cnt = 0 to MAX_VAXES-1
+	$CSData.RBV_VEL[$cnt] = StringToInteger(FileTextReadLine($fn))
+end
+
+for $cnt = 0 to MAX_VAXES-1
+	$CSData.RBV_POS[$cnt] = StringToInteger(FileTextReadLine($fn))
+end
+
+for $cnt = 0 to MAX_VAXES-1
+	$CSData.DMD_POS[$cnt] = StringToInteger(FileTextReadLine($fn))
+end
+
+for $cnt = 0 to MAX_VAXES-1
+	$strIN = FileTextReadLine($fn)
+	
+	if(StringEquals($strIN,"-1"))
+		continue
+	end
+	
+	if(StringIsInteger($strIN))
+		$CSData.axes[$cnt] = @StringToInteger($strIN)
+	else
+		$CSData.axes[$cnt] = @$strIN
+	end
+end
+	
+	$CSData.num_vAxes = StringToInteger(FileTextReadLine($fn))
+	$CSData.num_rAxes = StringToInteger(FileTextReadLine($fn))	
+	FileClose($fn)
+
+end
+
+// ###################################################################################################
+// # From here the functions are CS specific and motion related rather than data processing.
+// # Functions are intended to be called via an Automation1_Command_Execute(functionName) API call
+// # after this library has been loaded into the controller.
+// ###################################################################################################
+library function invSlitXForm(ref $realMotorPos[] as real, $centrePoint as real, $width as real)
+
+	$realMotorPos[0] = $centrePoint - 0.5*$width
+	$realMotorPos[1] = $centrePoint + 0.5*$width
+	
+end
+
+// ###################################################################################################
+// # MoveAbsolute routines.
+// # To be called from the regular ::move routine in EPICS.
+// # The CS info will be retrieved from the CS Name which must be unique.
+// ###################################################################################################
+library function CS_MoveAbsolute($CS_Name as string)
+
+	var $CSData as CSData
+	getCSData($CSData, $CS_Name+".txt")
+	
+	switch($CSData.CS_Type)
+		case CSType.Slit
+			CS_Slit_MoveAbsolute($CSData)
+		//case CSType.Other
+			//CS_Other_MoveAbsolute(...)	
+		//default
+			// CS_Type not found.
+	end
+
+end
+
+// ###################################################################################################
+// # Moves a slit CS to a specific position.
+// ###################################################################################################
+library function CS_Slit_MoveAbsolute($CSData as CSData)
+
+	var $DMD_C_POS = $CSData.DMD_POS[0]										// Global index used for: Demand value of centrepoint position.
+	var $DMD_W_POS = $CSData.DMD_POS[1]										// Global index used for: Demand value of slit width.
+	var $DMD_C as real
+	var $DMD_W as real
+	
+	var $realPositions[MAX_SLIT_AXES] as real
+	var $realAxes[MAX_SLIT_AXES] as axis
+	var $realSpeeds[MAX_SLIT_AXES] as real
+	
+	var $cnt as integer
+	
+	$DMD_C = $rglobal[$DMD_C_POS]
+	$DMD_W = $rglobal[$DMD_W_POS]
+	
+	// Extract relevant data from their structs and place it into properly sized arrays. Use default axis speeds.
+	for $cnt=0 to MAX_SLIT_AXES-1
+		$realAxes[$cnt] = $CSData.axes[$cnt]
+		$realSpeeds[$cnt] = ParameterGetAxisValue($realAxes[$cnt],AxisParameter.DefaultAxisSpeed)
+	end
+	
+	// Calculate positions of real motors that corresponds to the provided values of C and W.
+	invSlitXForm($realPositions, $DMD_C, $DMD_W)
+	// Command the move.
+	MoveAbsolute($realAxes, $realPositions, $realSpeeds)
+end
+
+// ###################################################################################################
+// # Jog routines.
+// # To be called from the regular ::move routine in EPICS.
+// # The CS info will be retrieved from the CS Name which must be unique.
+// ###################################################################################################
+library function CS_MoveVelocity($CS_Name as string, $velocity as real, $index as integer)
+
+	var $CSData as CSData
+	getCSData($CSData, $CS_Name+".txt")
+
+	switch($CSData.CS_Type)
+		case CSType.Slit
+			CS_Slit_MoveVelocity($CSData, $velocity, $index)	
+		//case CSType.Other
+			//CS_Other_MoveVelocity(...)		
+		//default
+			// CS_Type not found.
+	end
+end
+
+// ###################################################################################################
+// # Jogs a slit CS in a particular direction.
+// # The calling virtual axis is determined by comparing the RBV_Index.
+// ###################################################################################################
+library function CS_Slit_MoveVelocity($CSData as CSData, $velocity as real, $RBV_Index as integer)
+	var $axInd as integer
+	var $index as integer
+	for $axInd = 0 to $CSData.num_vAxes-1
+		if($RBV_Index == $CSData.RBV_POS[$axInd])
+			$index = $axInd
+		end
+	end
+	
+	//Index should be 0 or 1 for a slit CS, i.e. either the first (0) or second (1) virtual axis sent this command.
+	switch($index)
+		case 0			// Corresponds to the CentrePoint virtual axis being commanded. Axes should move in the same direction.
+			MoveFreerun([$CSData.axes[0],$CSData.axes[1]], [$velocity,$velocity])
+		case 1			// Corresponds to the Width virtual axis being commanded. Axes should move in opposite directions.
+			MoveFreerun([$CSData.axes[0],$CSData.axes[1]], [-$velocity,$velocity])
+	end
+end
+
+// ###################################################################################################
+// # MovePt Routines.
+// # To be used by ::buildProfile() in EPICS when writing a trajectory scanning Aeroscript file.
+// ###################################################################################################
+library function CS_MovePt($CSData as CSData, $allAxes[] as axis, ref $helperPosArr[] as real, $posArr[] as real, $vInds[] as integer, $time as real)
+
+	switch($CSData.CS_Type)
+		case CSType.Slit
+			CS_Slit_MovePt($allAxes, $helperPosArr, $posArr, $vInds, $time)
+		//case CSType.Other
+			//CS_Other_MovePt(...)	
+		//default
+			// CS_Type not found.
+	end
+
+end
+
+// ###################################################################################################
+// # Move a Slit CS (and optional real motors) to a specific point.
+// # Intended for use as part of trajectory scans.
+// # The $helperPosArr[] variable is a workaround to keep the position data in a single 1D array that
+// # is mutable as the array of literals passed in is not mutable and is incompatible with the "ref" keyword.
+// ###################################################################################################
+library function CS_Slit_MovePt($allAxes[] as axis, ref $helperPosArr[] as real, $posArr[] as real, $vInds[] as integer, $time as real)
+								
+	var $transformedPos[MAX_SLIT_AXES] as real
+	invSlitXForm($transformedPos, $posArr[$vInds[0]], $posArr[$vInds[1]])
+	
+	var $ii as integer
+	// (Ideally these loops/this whole routine should be written a bit more neatly.)
+	// Set helper array to be the same as posArr that was passed in as an array of literals.
+	for $ii=0 to length($posArr)-1
+		$helperPosArr[$ii] = $posArr[$ii]
+	end
+	// Update the virtual axis elements of the array with the transformed position DMD.
+	for $ii=0 to length($vInds)-1
+		$helperPosArr[$vInds[$ii]] = $transformedPos[$ii]
+	end
+
+	// Perform the move.
+	MovePt($allAxes, $helperPosArr, $time)
+end
+
+// ###################################################################################################
+// # Combines two arrays of axes into a single array.
+// ###################################################################################################
+library function joinAxisArrays(ref $allAxes[] as axis, $axisGroup1[] as axis, $axisGroup2[] as axis)
+	var $i as integer = 0
+	foreach var $axis in $axisGroup1
+		$allAxes[$i] = $axis
+		$i+=1
+	end
+	foreach var $axis in $axisGroup2
+		$allAxes[$i] = $axis
+		$i+=1
+	end	
+end
